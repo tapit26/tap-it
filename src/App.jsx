@@ -2093,7 +2093,7 @@ function DashboardShell({ go, route, children }) {
   const { user, logout } = useAuth();
   const toast = useToast();
   const section = route.path.replace(/^\/dashboard\/?/, "");
-  const publicUrl = `tap-it-nu.vercel.app/${user.account.username}`;
+  const publicUrl = `tap-it-nu.vercel.app/#/${user.account.username}`;
 
   const copyLink = async () => {
     try {
@@ -2244,7 +2244,7 @@ function Overview({ go }) {
               <Task done={active >= 3} label="Add at least three links" onClick={() => go("/dashboard/links")} />
               <Task done={(user.profile.socials || []).length > 0} label="Connect social icons" onClick={() => go("/dashboard/appearance")} />
               <Task done={a.views > 0} label="Share your page once" onClick={async () => {
-                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/${user.account.username}`); toast("Link copied — paste it in your bio."); }
+                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/#/${user.account.username}`); toast("Link copied — paste it in your bio."); }
                 catch { toast("Copy didn't work in this browser.", "bad"); }
               }} />
             </div>
@@ -3152,7 +3152,7 @@ function PublicProfile({ username, go }) {
           <div style={{ marginTop: 14 }}>
             <button
               onClick={async () => {
-                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/${rec.account.username}`); toast("Link copied."); }
+                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/#/${rec.account.username}`); toast("Link copied."); }
                 catch { toast("Copy didn't work in this browser.", "bad"); }
               }}
               style={{ background: "none", border: 0, color: theme.text, opacity: 0.6, fontSize: 12.5, cursor: "pointer" }}
