@@ -1232,7 +1232,7 @@ function HeroMockup() {
           <span style={{ color: "var(--p)", display: "flex" }}>{I.palette}</span> {themeById(order[themeIdx]).name}
         </div>
         <div className="chip-float hide-sm" style={{ bottom: 34, left: -34 }}>
-          tap-it.to/nadia
+          tap-it-nu.vercel.app/nadia
         </div>
       </div>
     </div>
@@ -1240,7 +1240,7 @@ function HeroMockup() {
 }
 
 const FEATURES = [
-  { icon: I.id, t: "Your own page", d: "Claim a username and get a page at tap-it.to/you that you fully control." },
+  { icon: I.id, t: "Your own page", d: "Claim a username and get a page at tap-it-nu.vercel.app/you that you fully control." },
   { icon: I.sparkle, t: "A profile that sounds like you", d: "Photo, name, bio and social icons — edited live, saved the moment you hit save." },
   { icon: I.layers, t: "Unlimited links", d: "Websites, shops, videos, playlists, PDFs. Reorder them by dragging." },
   { icon: I.chart, t: "Clicks you can read", d: "See views, clicks and which links people actually tap, day by day." },
@@ -1542,8 +1542,8 @@ function Signup({ go }) {
     timer.current = setTimeout(async () => {
       const taken = await db.usernameTaken(u);
       setUState(taken
-        ? { status: "bad", msg: `tap-it.to/${u} is taken` }
-        : { status: "ok", msg: `tap-it.to/${u} is available` });
+        ? { status: "bad", msg: `tap-it-nu.vercel.app/${u} is taken` }
+        : { status: "ok", msg: `tap-it-nu.vercel.app/${u} is available` });
     }, 420);
     return () => clearTimeout(timer.current);
   }, [f.username]);
@@ -1603,7 +1603,7 @@ function Signup({ go }) {
           hint={!f.username ? "Letters, numbers, dots and underscores. 3–20 characters." : undefined}
         >
           <div className="pfx">
-            <span className="pfx-tag">tap-it.to/</span>
+            <span className="pfx-tag">tap-it-nu.vercel.app/</span>
             <input id="su-user" value={f.username} onChange={set("username")} placeholder="yourname" autoComplete="off" spellCheck="false" aria-describedby="su-user-state" />
           </div>
           <div id="su-user-state" aria-live="polite" style={{ marginTop: 7, minHeight: 20 }}>
@@ -1930,7 +1930,7 @@ function Onboarding({ go }) {
         <Phone>
           <ProfileCanvas profile={previewProfile} links={previewLinks} />
         </Phone>
-        <p style={{ color: "#ABABAB", fontSize: 13 }}>tap-it.to/{user.account.username}</p>
+        <p style={{ color: "#ABABAB", fontSize: 13 }}>tap-it-nu.vercel.app/{user.account.username}</p>
       </aside>
     </div>
   );
@@ -2093,7 +2093,7 @@ function DashboardShell({ go, route, children }) {
   const { user, logout } = useAuth();
   const toast = useToast();
   const section = route.path.replace(/^\/dashboard\/?/, "");
-  const publicUrl = `tap-it.to/${user.account.username}`;
+  const publicUrl = `tap-it-nu.vercel.app/${user.account.username}`;
 
   const copyLink = async () => {
     try {
@@ -2139,7 +2139,7 @@ function DashboardShell({ go, route, children }) {
           <div className="row grow" style={{ minWidth: 0 }}>
             <span className="only-sm"><Logo size={24} /></span>
             <div className="grow hide-sm" style={{ minWidth: 0 }}>
-              <span className="mut sm">tap-it.to/</span>
+              <span className="mut sm">tap-it-nu.vercel.app/</span>
               <span className="sm" style={{ fontWeight: 600 }}>{user.account.username}</span>
             </div>
           </div>
@@ -2244,7 +2244,7 @@ function Overview({ go }) {
               <Task done={active >= 3} label="Add at least three links" onClick={() => go("/dashboard/links")} />
               <Task done={(user.profile.socials || []).length > 0} label="Connect social icons" onClick={() => go("/dashboard/appearance")} />
               <Task done={a.views > 0} label="Share your page once" onClick={async () => {
-                try { await navigator.clipboard.writeText(`https://tap-it.to/${user.account.username}`); toast("Link copied — paste it in your bio."); }
+                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/${user.account.username}`); toast("Link copied — paste it in your bio."); }
                 catch { toast("Copy didn't work in this browser.", "bad"); }
               }} />
             </div>
@@ -2938,7 +2938,7 @@ function Settings({ go }) {
     const res = await changeUsername(username.toLowerCase());
     setUBusy(false);
     if (!res.ok) { toast(res.error, "bad"); return; }
-    toast(`Your page is now tap-it.to/${res.username}.`);
+    toast(`Your page is now tap-it-nu.vercel.app/${res.username}.`);
   };
 
   const savePassword = async () => {
@@ -2969,7 +2969,7 @@ function Settings({ go }) {
         <p className="mut sm" style={{ marginTop: 5 }}>Changing this breaks the old link everywhere you've shared it.</p>
         <div style={{ marginTop: 16 }}>
           <div className="pfx">
-            <span className="pfx-tag">tap-it.to/</span>
+            <span className="pfx-tag">tap-it-nu.vercel.app/</span>
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 20))}
@@ -3031,7 +3031,7 @@ function Settings({ go }) {
       <div className="card pad-l" style={{ borderColor: "#F3D7DB" }}>
         <h3 style={{ fontSize: 17 }}>Delete account</h3>
         <p className="mut sm" style={{ marginTop: 5 }}>
-          Removes your page, links and analytics, and frees up tap-it.to/{user.account.username} for someone else. There's no undo.
+          Removes your page, links and analytics, and frees up tap-it-nu.vercel.app/{user.account.username} for someone else. There's no undo.
         </p>
         <Button variant="d" style={{ marginTop: 16 }} onClick={() => setDelOpen(true)}>Delete my account</Button>
       </div>
@@ -3113,7 +3113,7 @@ function PublicProfile({ username, go }) {
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
         <div>
           <Logo onClick={() => go("/")} />
-          <h1 style={{ fontSize: 30, marginTop: 24 }}>tap-it.to/{username} isn't taken</h1>
+          <h1 style={{ fontSize: 30, marginTop: 24 }}>tap-it-nu.vercel.app/{username} isn't taken</h1>
           <p className="mut" style={{ marginTop: 10, maxWidth: "40ch" }}>
             Nobody's claimed this username yet. It could be yours in about a minute.
           </p>
@@ -3152,7 +3152,7 @@ function PublicProfile({ username, go }) {
           <div style={{ marginTop: 14 }}>
             <button
               onClick={async () => {
-                try { await navigator.clipboard.writeText(`https://tap-it.to/${rec.account.username}`); toast("Link copied."); }
+                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/${rec.account.username}`); toast("Link copied."); }
                 catch { toast("Copy didn't work in this browser.", "bad"); }
               }}
               style={{ background: "none", border: 0, color: theme.text, opacity: 0.6, fontSize: 12.5, cursor: "pointer" }}
