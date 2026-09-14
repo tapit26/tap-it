@@ -2709,9 +2709,9 @@ function Appearance() {
               ))}
               <button className="th" aria-pressed={p.theme === "custom"} onClick={() => upd({ theme: "custom" })}>
                 <div className="th-sw" style={{ background: p.customBgType === "gradient" ? `linear-gradient(${p.customBgAngle ?? 165}deg, ${p.customBg || "#FFFFFF"} 0%, ${p.customBg2 || "#6C5CE7"} 100%)` : (p.customBg || "#FFFFFF") }}>
-                  <i style={{ background: p.customAccent || "#6C5CE7", opacity: 0.9 }} />
-                  <i style={{ background: p.customAccent || "#6C5CE7", opacity: 0.5 }} />
-                  <i style={{ background: p.customAccent || "#6C5CE7", opacity: 0.9 }} />
+                  <i style={{ background: p.customCard || "#FFFFFF", opacity: 0.9 }} />
+                  <i style={{ background: p.customCard || "#FFFFFF", opacity: 0.5 }} />
+                  <i style={{ background: p.customCard || "#FFFFFF", opacity: 0.9 }} />
                 </div>
                 <div className="th-name">Custom</div>
               </button>
@@ -2797,7 +2797,6 @@ function Appearance() {
                     { key: "customText", label: "Text", fallback: isLightColor(p.customBg || "#FFFFFF") ? "#17151F" : "#FFFFFF" },
                     { key: "customCard", label: "Card", fallback: "#FFFFFF" },
                     { key: "customCardText", label: "Card text", fallback: "#17151F" },
-                    { key: "customAccent", label: "Accent", fallback: "#6C5CE7" },
                   ].map(({ key, label, fallback }) => (
                     <div key={key}>
                       <label className="fld-lab">{label}</label>
