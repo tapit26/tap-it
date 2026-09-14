@@ -3303,6 +3303,12 @@ export default function App() {
       const { data, error } = await supabase.auth.signUp({
         email: f.email.trim().toLowerCase(),
         password: f.password,
+        options: {
+          data: {
+            username,
+            display_name: clean(f.name, 60),
+          },
+        },
       });
       if (error) {
         const field = /email/i.test(error.message) ? "email" : undefined;
@@ -3312,13 +3318,11 @@ export default function App() {
         return { ok: false, error: "Something went wrong creating your account." };
       }
 
-      const { error: profileErr } = await supabase.from("profiles").insert({
-        id: data.user.id,
-        username,
-        display_name: clean(f.name, 60),
-        onboarded: false,
-      });
-      if (profileErr) return { ok: false, error: profileErr.message };
+      /* The profiles row is created server-side by a Postgres trigger
+         (on_auth_user_created) that reads username/display_name from
+         this signUp call's metadata — this works even before email
+         confirmation, when the client has no session yet and RLS
+         would otherwise block a client-side insert. */
 
       /* If your Supabase project has email confirmation ON (the default),
          data.session will be null here until the user clicks the emailed
