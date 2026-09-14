@@ -1065,14 +1065,14 @@ function saveContact(profile, username) {
 }
 
 /** The one component reused by the hero mockup, onboarding, dashboard preview and the public page. */
-function ProfileCanvas({ profile, links, interactive = false, onLinkClick, username }) {
+function ProfileCanvas({ profile, links, interactive = false, onLinkClick, username, fillParentBg = false }) {
   const theme = getTheme(profile);
   const appearance = { buttonStyle: profile.buttonStyle || "soft", radius: profile.radius || "round" };
   const font = FONTS.find((f) => f.id === (profile.font || "manrope"))?.stack || FONTS[0].stack;
   const live = links.filter((l) => l.active !== false);
 
   return (
-    <div className="pf" style={{ background: theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font }}>
+    <div className="pf" style={{ background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font }}>
       {profile.cover && (
         <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}`, filter: profile.coverBlur ? "blur(6px)" : "none" }} />
       )}
@@ -3284,7 +3284,7 @@ function PublicProfile({ username, go }) {
         </div>
       )}
       <div style={{ maxWidth: 520, margin: "0 auto", minHeight: "100vh" }}>
-        <ProfileCanvas profile={rec.profile} links={rec.links} interactive onLinkClick={onLinkClick} username={rec.account.username} />
+        <ProfileCanvas profile={rec.profile} links={rec.links} interactive onLinkClick={onLinkClick} username={rec.account.username} fillParentBg />
         <div style={{ textAlign: "center", padding: "10px 20px 42px" }}>
           <button
             onClick={() => go("/signup")}
