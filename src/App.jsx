@@ -341,6 +341,7 @@ p.pf-bio { text-align:center; font-size:14px; margin-top:7px; opacity:.78; line-
   .step { border-bottom:1px solid var(--line); }
   .dash-split { grid-template-columns:1fr; }
   .dash-prev { position:static; }
+  .dash-prev .phone { margin: 0 auto; }
   .ob { grid-template-columns:1fr; }
   .ob-side { display:none; }
   .ob-inline { display:block; }
@@ -2875,6 +2876,21 @@ function Appearance() {
         </div>
         <PreviewPane user={previewUser} title="Unsaved preview" />
       </div>
+
+      <button
+        className="btn btn-g only-sm"
+        style={{ width: "100%" }}
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/#/${user.account.username}`);
+            toast("Link copied.");
+          } catch {
+            toast("Copy didn't work in this browser.", "bad");
+          }
+        }}
+      >
+        {I.copy} Copy your page's link
+      </button>
     </div>
   );
 }
