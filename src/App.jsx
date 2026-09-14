@@ -1107,7 +1107,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
             <a
               key={s.platform + s.url}
               href={interactive ? s.url : undefined}
-              target="_blank"
+              target={/^(mailto:|tel:|sms:)/i.test(s.url || "") ? undefined : "_blank"}
               rel="noopener noreferrer nofollow"
               onClick={(e) => { if (!interactive) e.preventDefault(); else onLinkClick?.({ id: "social:" + s.platform, title: SOCIALS[s.platform]?.label || s.platform }); }}
               aria-label={SOCIALS[s.platform]?.label || s.platform}
@@ -1133,7 +1133,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
               key={l.id}
               className="pf-lnk"
               href={interactive ? l.url : undefined}
-              target="_blank"
+              target={/^(mailto:|tel:|sms:)/i.test(l.url || "") ? undefined : "_blank"}
               rel="noopener noreferrer nofollow"
               style={{ ...linkStyleFor(theme, appearance), animationDelay: `${i * 45}ms` }}
               onClick={(e) => { if (!interactive) e.preventDefault(); else onLinkClick?.(l); }}
@@ -2073,6 +2073,31 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: I.gear },
 ];
 
+/* Writes a URL directly onto a physical NFC tag/card using the Web NFC API.
+   Only supported on Chrome for Android over HTTPS — everywhere else
+   (iOS, desktop, other browsers) there's no way for a webpage to talk to
+   NFC hardware, so we detect that and tell the user plainly. */
+async function writeUrlToNfc(url, toast) {
+  if (!("NDEFReader" in window)) {
+    toast("Writing to NFC needs Chrome on an Android phone with NFC turned on.", "bad");
+    return;
+  }
+  try {
+    const ndef = new window.NDEFReader();
+    toast("Hold your NFC card against the back of your phone…");
+    await ndef.write({ records: [{ recordType: "url", data: url }] });
+    toast("Card written! It'll open your page on tap.");
+  } catch (err) {
+    if (err?.name === "NotAllowedError") {
+      toast("NFC permission was blocked. Allow it and try again.", "bad");
+    } else if (err?.name === "NotSupportedError") {
+      toast("This device doesn't support NFC writing.", "bad");
+    } else {
+      toast("Couldn't write to the card. Try holding it steady against your phone.", "bad");
+    }
+  }
+}
+
 function DashboardShell({ go, route, children }) {
   const { user, logout } = useAuth();
   const toast = useToast();
@@ -2111,6 +2136,9 @@ function DashboardShell({ go, route, children }) {
             <Button variant="g" size="sm" onClick={copyLink} style={{ flex: 1 }}>{I.copy} Copy</Button>
             <Button variant="g" size="sm" onClick={() => go("/" + user.account.username)} aria-label="Open public page">{I.ext}</Button>
           </div>
+          <Button variant="g" size="sm" style={{ width: "100%", marginTop: 7 }} onClick={() => writeUrlToNfc(`https://${publicUrl}`, toast)}>
+            {I.nfc || "📶"} Write to NFC card
+          </Button>
         </div>
         <button className="side-l" style={{ marginTop: 8 }} onClick={() => { logout(); go("/", { replace: true }); toast("Logged out."); }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6" /></svg>
@@ -2129,6 +2157,7 @@ function DashboardShell({ go, route, children }) {
           </div>
           <div className="row">
             <Button variant="g" size="sm" onClick={copyLink} className="hide-sm">{I.copy} Copy link</Button>
+            <Button variant="g" size="sm" onClick={() => writeUrlToNfc(`https://${publicUrl}`, toast)} className="hide-sm">{I.nfc || "📶"} Write to NFC</Button>
             <Button size="sm" onClick={() => go("/" + user.account.username)}>{I.eyeSm} View page</Button>
             <Avatar src={user.profile.avatar} name={user.profile.displayName} size={34} />
           </div>
@@ -2288,7 +2317,11 @@ function LinksPage() {
     let url = null;
     if (draft.type !== "header") {
       url = safeUrl(draft.url);
-      if (!draft.url.trim()) next.url = "Add the destination URL.";
+      if (draft.icon === "email") {
+        const addr = (draft.url || "").replace(/^mailto:/i, "").trim();
+        if (!addr) next.url = "Add your email address.";
+        else if (!EMAIL_RE.test(addr)) next.url = "That email address doesn't look right.";
+      } else if (!draft.url.trim()) next.url = "Add the destination URL.";
       else if (!url) next.url = "That URL isn't valid. Try something like example.com/page.";
     }
     setErrs(next);
@@ -2455,13 +2488,39 @@ function LinksPage() {
             </Field>
             {draft.type !== "header" && (
               <>
-                <Field label="URL" id="lk-url" error={errs.url} hint="https:// is added for you if you leave it off.">
-                  <TextInput
-                    id="lk-url" value={draft.url} placeholder="example.com/shop" inputMode="url" spellCheck="false"
-                    onChange={(e) => { setDraft((d) => ({ ...d, url: e.target.value })); setErrs((p) => ({ ...p, url: null })); }}
-                    error={errs.url}
-                  />
-                </Field>
+                {draft.icon === "email" ? (
+                  <Field label="Email address" id="lk-url" error={errs.url} hint="Visitors tap this to compose an email straight to you.">
+                    <div className="row" style={{ gap: 0, alignItems: "stretch" }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display: "flex", alignItems: "center", padding: "0 10px",
+                          background: "var(--tint)", border: "1px solid var(--line)", borderRight: "none",
+                          borderRadius: "12px 0 0 12px", color: "var(--mut)", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
+                        }}
+                      >
+                        mailto:
+                      </span>
+                      <TextInput
+                        id="lk-url"
+                        value={(draft.url || "").replace(/^mailto:/i, "")}
+                        placeholder="hello@yourbusiness.com"
+                        inputMode="email" spellCheck="false" autoCapitalize="none"
+                        style={{ borderRadius: "0 12px 12px 0" }}
+                        onChange={(e) => { setDraft((d) => ({ ...d, url: "mailto:" + e.target.value.trim() })); setErrs((p) => ({ ...p, url: null })); }}
+                        error={errs.url}
+                      />
+                    </div>
+                  </Field>
+                ) : (
+                  <Field label="URL" id="lk-url" error={errs.url} hint="https:// is added for you if you leave it off.">
+                    <TextInput
+                      id="lk-url" value={draft.url} placeholder="example.com/shop" inputMode="url" spellCheck="false"
+                      onChange={(e) => { setDraft((d) => ({ ...d, url: e.target.value })); setErrs((p) => ({ ...p, url: null })); }}
+                      error={errs.url}
+                    />
+                  </Field>
+                )}
                 <Field label="Icon" id="lk-icon" hint="Optional. Shows to the left of the label.">
                   <div className="row" style={{ flexWrap: "wrap", gap: 7 }}>
                     <button
@@ -2827,6 +2886,13 @@ function Appearance() {
         }}
       >
         {I.copy} Copy your page's link
+      </button>
+      <button
+        className="btn btn-g only-sm"
+        style={{ width: "100%" }}
+        onClick={() => writeUrlToNfc(`https://tap-it-nu.vercel.app/#/${user.account.username}`, toast)}
+      >
+        {I.nfc || "📶"} Write to NFC card
       </button>
     </div>
   );
