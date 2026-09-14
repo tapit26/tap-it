@@ -498,11 +498,15 @@ function recFromRow(row, links, analytics, email) {
       cover: row.cover_url || null,
       theme: row.theme || "dawn",
       customBg: row.custom_bg || "#FFFFFF",
+      customBg2: row.custom_bg2 || "#6C5CE7",
+      customBgType: row.custom_bg_type || "solid",
+      customBgAngle: row.custom_bg_angle ?? 165,
       customText: row.custom_text || "",
       customCard: row.custom_card || "",
       customCardText: row.custom_card_text || "",
       customBorder: row.custom_border || "",
       customAccent: row.custom_accent || "#6C5CE7",
+      coverBlur: !!row.cover_blur,
       buttonStyle: row.button_style || "soft",
       radius: row.radius || "round",
       font: row.font || "manrope",
@@ -590,11 +594,15 @@ const db = {
         cover_url: profile.cover || null,
         theme: profile.theme || "dawn",
         custom_bg: profile.customBg || "#FFFFFF",
+        custom_bg2: profile.customBg2 || "#6C5CE7",
+        custom_bg_type: profile.customBgType || "solid",
+        custom_bg_angle: profile.customBgAngle ?? 165,
         custom_text: profile.customText || null,
         custom_card: profile.customCard || null,
         custom_card_text: profile.customCardText || null,
         custom_border: profile.customBorder || null,
         custom_accent: profile.customAccent || "#6C5CE7",
+        cover_blur: !!profile.coverBlur,
         button_style: profile.buttonStyle || "soft",
         radius: profile.radius || "round",
         font: profile.font || "manrope",
@@ -919,6 +927,12 @@ function isLightColor(hex) {
    still looks coherent. */
 function buildCustomTheme(colors = {}) {
   const safeBg = /^#[0-9a-f]{6}$/i.test(colors.bg || "") ? colors.bg : "#FFFFFF";
+  const safeBg2 = /^#[0-9a-f]{6}$/i.test(colors.bg2 || "") ? colors.bg2 : "#FFFFFF";
+  const angle = Number.isFinite(colors.bgAngle) ? colors.bgAngle : 165;
+  const isGradient = colors.bgType === "gradient";
+  const bgCss = isGradient ? `linear-gradient(${angle}deg, ${safeBg} 0%, ${safeBg2} 100%)` : safeBg;
+  // Luminance/contrast decisions use the first color even in gradient mode —
+  // a full blend check isn't worth it for picking text/card fallbacks.
   const light = isLightColor(safeBg);
   const fallbackText = light ? "#17151F" : "#FFFFFF";
   const fallbackCard = light ? "rgba(0,0,0,.045)" : "rgba(255,255,255,.09)";
@@ -927,7 +941,7 @@ function buildCustomTheme(colors = {}) {
   return {
     id: "custom",
     name: "Custom",
-    bg: safeBg,
+    bg: bgCss,
     text: safe(colors.text, fallbackText),
     card: safe(colors.card, fallbackCard) || fallbackCard,
     cardText: safe(colors.cardText, safe(colors.text, fallbackText)),
@@ -942,6 +956,9 @@ function getTheme(profile) {
   if (profile?.theme === "custom") {
     return buildCustomTheme({
       bg: profile.customBg,
+      bg2: profile.customBg2,
+      bgType: profile.customBgType,
+      bgAngle: profile.customBgAngle,
       text: profile.customText,
       card: profile.customCard,
       cardText: profile.customCardText,
@@ -1026,7 +1043,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
   return (
     <div className="pf" style={{ background: theme.bg, color: theme.text, fontFamily: font }}>
       {profile.cover && (
-        <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}` }} />
+        <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}`, filter: profile.coverBlur ? "blur(6px)" : "none" }} />
       )}
       <div
         className="pf-av"
@@ -2601,9 +2618,9 @@ function Appearance() {
               <div>
                 <label className="fld-lab">Cover photo</label>
                 {p.cover && (
-                  <div style={{ width: "100%", height: 110, borderRadius: 16, backgroundImage: `url(${p.cover})`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 10, border: "1px solid var(--line)" }} />
+                  <div style={{ width: "100%", height: 110, borderRadius: 16, backgroundImage: `url(${p.cover})`, backgroundSize: "cover", backgroundPosition: "center", marginBottom: 10, border: "1px solid var(--line)", filter: p.coverBlur ? "blur(6px)" : "none" }} />
                 )}
-                <div className="row" style={{ gap: 8 }}>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
                   <label className="btn btn-g btn-sm" style={{ cursor: "pointer" }}>
                     {p.cover ? "Replace" : "Upload cover"}
                     <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
@@ -2616,6 +2633,14 @@ function Appearance() {
                     }} />
                   </label>
                   {p.cover && <Button variant="q" size="sm" onClick={() => upd({ cover: null })}>Remove</Button>}
+                  {p.cover && (
+                    <label className="row" style={{ gap: 7, alignItems: "center", cursor: "pointer", marginLeft: 4 }}>
+                      <button type="button" className="sw" role="switch" aria-checked={!!p.coverBlur} onClick={() => upd({ coverBlur: !p.coverBlur })}>
+                        <i style={{ transform: p.coverBlur ? "translateX(18px)" : "none" }} />
+                      </button>
+                      <span className="sm mut">Blur cover photo</span>
+                    </label>
+                  )}
                 </div>
               </div>
               <Field label="Display name" id="ap-name">
@@ -2645,7 +2670,7 @@ function Appearance() {
                 </button>
               ))}
               <button className="th" aria-pressed={p.theme === "custom"} onClick={() => upd({ theme: "custom" })}>
-                <div className="th-sw" style={{ background: p.customBg || "#FFFFFF" }}>
+                <div className="th-sw" style={{ background: p.customBgType === "gradient" ? `linear-gradient(${p.customBgAngle ?? 165}deg, ${p.customBg || "#FFFFFF"} 0%, ${p.customBg2 || "#6C5CE7"} 100%)` : (p.customBg || "#FFFFFF") }}>
                   <i style={{ background: p.customAccent || "#6C5CE7", opacity: 0.9 }} />
                   <i style={{ background: p.customAccent || "#6C5CE7", opacity: 0.5 }} />
                   <i style={{ background: p.customAccent || "#6C5CE7", opacity: 0.9 }} />
@@ -2654,21 +2679,51 @@ function Appearance() {
               </button>
             </div>
             {p.theme === "custom" && (
-              <div className="row" style={{ gap: 18, marginTop: 16, flexWrap: "wrap" }}>
-                {[
-                  { key: "customBg", label: "Background", fallback: "#FFFFFF" },
-                  { key: "customText", label: "Text", fallback: isLightColor(p.customBg || "#FFFFFF") ? "#17151F" : "#FFFFFF" },
-                  { key: "customCard", label: "Card", fallback: "#FFFFFF" },
-                  { key: "customCardText", label: "Card text", fallback: "#17151F" },
-                  { key: "customAccent", label: "Accent", fallback: "#6C5CE7" },
-                ].map(({ key, label, fallback }) => (
-                  <div key={key}>
-                    <label className="fld-lab">{label}</label>
-                    <input type="color" value={/^#[0-9a-f]{6}$/i.test(p[key] || "") ? p[key] : fallback}
-                      onChange={(e) => upd({ [key]: e.target.value })}
+              <div className="stack" style={{ "--gap": "16px", marginTop: 16 }}>
+                <div>
+                  <label className="fld-lab">Background style</label>
+                  <div className="row" style={{ gap: 8, marginTop: 6 }}>
+                    <Button variant={p.customBgType === "gradient" ? "p" : "g"} size="sm" onClick={() => upd({ customBgType: "solid" })}>Solid</Button>
+                    <Button variant={p.customBgType === "gradient" ? "p" : "g"} size="sm" onClick={() => upd({ customBgType: "gradient" })}>Gradient</Button>
+                  </div>
+                </div>
+                <div className="row" style={{ gap: 18, flexWrap: "wrap" }}>
+                  <div>
+                    <label className="fld-lab">{p.customBgType === "gradient" ? "Background (start)" : "Background"}</label>
+                    <input type="color" value={/^#[0-9a-f]{6}$/i.test(p.customBg || "") ? p.customBg : "#FFFFFF"}
+                      onChange={(e) => upd({ customBg: e.target.value })}
                       style={{ width: 48, height: 36, border: "1px solid var(--line)", borderRadius: 8, cursor: "pointer", padding: 2 }} />
                   </div>
-                ))}
+                  {p.customBgType === "gradient" && (
+                    <div>
+                      <label className="fld-lab">Background (end)</label>
+                      <input type="color" value={/^#[0-9a-f]{6}$/i.test(p.customBg2 || "") ? p.customBg2 : "#6C5CE7"}
+                        onChange={(e) => upd({ customBg2: e.target.value })}
+                        style={{ width: 48, height: 36, border: "1px solid var(--line)", borderRadius: 8, cursor: "pointer", padding: 2 }} />
+                    </div>
+                  )}
+                  {[
+                    { key: "customText", label: "Text", fallback: isLightColor(p.customBg || "#FFFFFF") ? "#17151F" : "#FFFFFF" },
+                    { key: "customCard", label: "Card", fallback: "#FFFFFF" },
+                    { key: "customCardText", label: "Card text", fallback: "#17151F" },
+                    { key: "customAccent", label: "Accent", fallback: "#6C5CE7" },
+                  ].map(({ key, label, fallback }) => (
+                    <div key={key}>
+                      <label className="fld-lab">{label}</label>
+                      <input type="color" value={/^#[0-9a-f]{6}$/i.test(p[key] || "") ? p[key] : fallback}
+                        onChange={(e) => upd({ [key]: e.target.value })}
+                        style={{ width: 48, height: 36, border: "1px solid var(--line)", borderRadius: 8, cursor: "pointer", padding: 2 }} />
+                    </div>
+                  ))}
+                </div>
+                {p.customBgType === "gradient" && (
+                  <div>
+                    <label className="fld-lab">Gradient angle ({p.customBgAngle ?? 165}°)</label>
+                    <input type="range" min="0" max="360" value={p.customBgAngle ?? 165}
+                      onChange={(e) => upd({ customBgAngle: Number(e.target.value) })}
+                      style={{ width: "100%", marginTop: 6 }} />
+                  </div>
+                )}
               </div>
             )}
           </div>
