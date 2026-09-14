@@ -507,6 +507,10 @@ function recFromRow(row, links, analytics, email) {
       customBorder: row.custom_border || "",
       customAccent: row.custom_accent || "#6C5CE7",
       coverBlur: !!row.cover_blur,
+      bgPhoto: row.bg_photo || null,
+      bgPhotoOverlay: row.bg_photo_overlay ?? 45,
+      bgPhotoBlur: !!row.bg_photo_blur,
+      bgPhotoTextMode: row.bg_photo_text_mode || "light",
       buttonStyle: row.button_style || "soft",
       radius: row.radius || "round",
       font: row.font || "manrope",
@@ -603,6 +607,10 @@ const db = {
         custom_border: profile.customBorder || null,
         custom_accent: profile.customAccent || "#6C5CE7",
         cover_blur: !!profile.coverBlur,
+        bg_photo: profile.bgPhoto || null,
+        bg_photo_overlay: profile.bgPhotoOverlay ?? 45,
+        bg_photo_blur: !!profile.bgPhotoBlur,
+        bg_photo_text_mode: profile.bgPhotoTextMode || "light",
         button_style: profile.buttonStyle || "soft",
         radius: profile.radius || "round",
         font: profile.font || "manrope",
@@ -951,6 +959,26 @@ function buildCustomTheme(colors = {}) {
   };
 }
 
+/* Builds a theme object for the "Photo" preset: a full-bleed uploaded
+   background image with a dark/light overlay for text contrast. */
+function buildPhotoTheme(profile = {}) {
+  const overlay = Number.isFinite(profile.bgPhotoOverlay) ? profile.bgPhotoOverlay : 45;
+  const dark = profile.bgPhotoTextMode !== "dark"; // default: light text on photo
+  return {
+    id: "photo",
+    name: "Photo",
+    bg: profile.bgPhoto ? `linear-gradient(rgba(0,0,0,${overlay / 100}),rgba(0,0,0,${overlay / 100})), url(${profile.bgPhoto})` : "#1B1A17",
+    bgSize: "cover",
+    bgPosition: "center",
+    text: dark ? "#FFFFFF" : "#17151F",
+    card: dark ? "rgba(255,255,255,.14)" : "rgba(255,255,255,.75)",
+    cardText: dark ? "#FFFFFF" : "#17151F",
+    border: dark ? "rgba(255,255,255,.28)" : "rgba(0,0,0,.14)",
+    accent: dark ? "#FFFFFF" : "#17151F",
+    shadow: "none",
+  };
+}
+
 /* Resolves a profile's active theme, including the custom case. */
 function getTheme(profile) {
   if (profile?.theme === "custom") {
@@ -965,6 +993,9 @@ function getTheme(profile) {
       border: profile.customBorder,
       accent: profile.customAccent,
     });
+  }
+  if (profile?.theme === "photo") {
+    return buildPhotoTheme(profile);
   }
   return themeById(profile?.theme);
 }
@@ -1041,7 +1072,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
   const live = links.filter((l) => l.active !== false);
 
   return (
-    <div className="pf" style={{ background: theme.bg, color: theme.text, fontFamily: font }}>
+    <div className="pf" style={{ background: theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font }}>
       {profile.cover && (
         <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}`, filter: profile.coverBlur ? "blur(6px)" : "none" }} />
       )}
@@ -2681,7 +2712,60 @@ function Appearance() {
                 </div>
                 <div className="th-name">Custom</div>
               </button>
+              <button className="th" aria-pressed={p.theme === "photo"} onClick={() => upd({ theme: "photo" })}>
+                <div className="th-sw" style={{ background: p.bgPhoto ? `linear-gradient(rgba(0,0,0,${(p.bgPhotoOverlay ?? 45) / 100}),rgba(0,0,0,${(p.bgPhotoOverlay ?? 45) / 100})), url(${p.bgPhoto})` : "#3A3A3A", backgroundSize: "cover", backgroundPosition: "center" }}>
+                  {!p.bgPhoto && <span style={{ fontSize: 11, color: "#fff", opacity: 0.75, margin: "auto" }}>{I.image || "📷"}</span>}
+                </div>
+                <div className="th-name">Photo</div>
+              </button>
             </div>
+            {p.theme === "photo" && (
+              <div className="stack" style={{ "--gap": "16px", marginTop: 16 }}>
+                {p.bgPhoto && (
+                  <div style={{ width: "100%", height: 140, borderRadius: 16, backgroundImage: `linear-gradient(rgba(0,0,0,${(p.bgPhotoOverlay ?? 45) / 100}),rgba(0,0,0,${(p.bgPhotoOverlay ?? 45) / 100})), url(${p.bgPhoto})`, backgroundSize: "cover", backgroundPosition: "center", border: "1px solid var(--line)", filter: p.bgPhotoBlur ? "blur(6px)" : "none" }} />
+                )}
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <label className="btn btn-g btn-sm" style={{ cursor: "pointer" }}>
+                    {p.bgPhoto ? "Replace photo" : "Upload photo"}
+                    <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (!/^image\//.test(file.type)) { toast("Pick an image file.", "bad"); return; }
+                      if (file.size > 10 * 1024 * 1024) { toast("Images need to be under 10MB.", "bad"); return; }
+                      const cropped = await requestCrop(file, { aspect: 9 / 16, shape: "rect", maxOutput: 1600 });
+                      if (cropped) upd({ bgPhoto: cropped, theme: "photo" });
+                    }} />
+                  </label>
+                  {p.bgPhoto && <Button variant="q" size="sm" onClick={() => upd({ bgPhoto: null })}>Remove</Button>}
+                  {p.bgPhoto && (
+                    <label className="row" style={{ gap: 7, alignItems: "center", cursor: "pointer", marginLeft: 4 }}>
+                      <button type="button" className="sw" role="switch" aria-checked={!!p.bgPhotoBlur} onClick={() => upd({ bgPhotoBlur: !p.bgPhotoBlur })}>
+                        <i style={{ transform: p.bgPhotoBlur ? "translateX(18px)" : "none" }} />
+                      </button>
+                      <span className="sm mut">Blur photo</span>
+                    </label>
+                  )}
+                </div>
+                {p.bgPhoto && (
+                  <>
+                    <div>
+                      <label className="fld-lab">Overlay darkness ({p.bgPhotoOverlay ?? 45}%)</label>
+                      <input type="range" min="0" max="85" value={p.bgPhotoOverlay ?? 45}
+                        onChange={(e) => upd({ bgPhotoOverlay: Number(e.target.value) })}
+                        style={{ width: "100%", marginTop: 6 }} />
+                      <p className="mut" style={{ fontSize: 12, marginTop: 4 }}>Darkens the photo so text stays readable.</p>
+                    </div>
+                    <div>
+                      <label className="fld-lab">Text colour</label>
+                      <div className="row" style={{ gap: 8, marginTop: 6 }}>
+                        <Button variant={p.bgPhotoTextMode !== "dark" ? "p" : "g"} size="sm" onClick={() => upd({ bgPhotoTextMode: "light" })}>Light text</Button>
+                        <Button variant={p.bgPhotoTextMode === "dark" ? "p" : "g"} size="sm" onClick={() => upd({ bgPhotoTextMode: "dark" })}>Dark text</Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             {p.theme === "custom" && (
               <div className="stack" style={{ "--gap": "16px", marginTop: 16 }}>
                 <div>
