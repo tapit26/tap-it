@@ -176,13 +176,13 @@ textarea.inp { resize:vertical; min-height:86px; line-height:1.5; }
 .pf-av { width:88px; height:88px; border-radius:50%; margin:0 auto; display:flex; align-items:center; justify-content:center; font-family:var(--disp); font-weight:800; font-size:31px; overflow:hidden; position:relative; z-index:2; }
 .pf-cover { width:100%; height:132px; border-radius:22px; background-size:cover; background-position:center; margin-bottom:0; }
 .pf-av img { width:100%; height:100%; object-fit:cover; }
-.pf-name { font-family:var(--disp); font-weight:800; font-size:19px; text-align:center; margin-top:14px; letter-spacing:-.02em; }
-p.pf-bio { text-align:center; font-size:14px; margin-top:7px; opacity:.78; line-height:1.5; max-width:34ch; margin-left:auto; margin-right:auto; white-space:pre-line; }
+.pf-name { font-family:var(--disp); font-weight:800; font-size:calc(19px * var(--fs-scale, 1)); text-align:center; margin-top:14px; letter-spacing:-.02em; }
+p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-top:7px; opacity:.78; line-height:1.5; max-width:34ch; margin-left:auto; margin-right:auto; white-space:pre-line; }
 .pf-soc { display:flex; justify-content:center; flex-wrap:wrap; gap:14px; margin-top:18px; }
 .pf-soc button, .pf-soc a { background:none; border:0; cursor:pointer; opacity:.82; display:flex; transition: transform .16s ease, opacity .16s ease; }
 .pf-soc button:hover, .pf-soc a:hover { transform: translateY(-2px); opacity:1; }
 .pf-links { margin-top:26px; display:flex; flex-direction:column; gap:13px; }
-.pf-lnk { display:flex; align-items:center; gap:12px; width:100%; padding:15px 16px; cursor:pointer; font-weight:600; font-size:15px; text-align:left; border:1px solid transparent; transition: transform .16s cubic-bezier(.2,.8,.3,1), box-shadow .16s ease, filter .16s ease; animation: lnkIn .42s cubic-bezier(.2,.8,.3,1) backwards; }
+.pf-lnk { display:flex; align-items:center; gap:12px; width:100%; padding:15px 16px; cursor:pointer; font-weight:600; font-size:calc(15px * var(--fs-scale, 1)); text-align:left; border:1px solid transparent; transition: transform .16s cubic-bezier(.2,.8,.3,1), box-shadow .16s ease, filter .16s ease; animation: lnkIn .42s cubic-bezier(.2,.8,.3,1) backwards; }
 .pf-lnk:hover { transform: translateY(-2px) scale(1.012); }
 .pf-lnk:active { transform: translateY(0) scale(.995); }
 @keyframes lnkIn { from { opacity:0; transform: translateY(12px); } }
@@ -512,6 +512,7 @@ function recFromRow(row, links, analytics, email) {
       bgPhotoOverlay: row.bg_photo_overlay ?? 45,
       bgPhotoBlur: !!row.bg_photo_blur,
       bgPhotoTextMode: row.bg_photo_text_mode || "light",
+      fontScale: row.font_scale || 100,
       buttonStyle: row.button_style || "soft",
       radius: row.radius || "round",
       font: row.font || "manrope",
@@ -612,6 +613,7 @@ const db = {
         bg_photo_overlay: profile.bgPhotoOverlay ?? 45,
         bg_photo_blur: !!profile.bgPhotoBlur,
         bg_photo_text_mode: profile.bgPhotoTextMode || "light",
+        font_scale: profile.fontScale || 100,
         button_style: profile.buttonStyle || "soft",
         radius: profile.radius || "round",
         font: profile.font || "manrope",
@@ -1073,7 +1075,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
   const live = links.filter((l) => l.active !== false);
 
   return (
-    <div className="pf" style={{ background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font }}>
+    <div className="pf" style={{ background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font, "--fs-scale": (profile.fontScale || 100) / 100 }}>
       {profile.cover && (
         <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}`, filter: profile.coverBlur ? "blur(6px)" : "none" }} />
       )}
@@ -2823,6 +2825,13 @@ function Appearance() {
               <Chooser label="Button style" options={BUTTON_STYLES} value={p.buttonStyle || "soft"} onChange={(v) => upd({ buttonStyle: v })} />
               <Chooser label="Corners" options={RADII} value={p.radius || "round"} onChange={(v) => upd({ radius: v })} />
               <Chooser label="Typeface" options={FONTS} value={p.font || "manrope"} onChange={(v) => upd({ font: v })} render={(o) => <span style={{ fontFamily: o.stack }}>{o.name}</span>} />
+              <div>
+                <label className="fld-lab">Font size ({p.fontScale || 100}%)</label>
+                <input type="range" min="80" max="140" step="5" value={p.fontScale || 100}
+                  onChange={(e) => upd({ fontScale: Number(e.target.value) })}
+                  style={{ width: "100%", marginTop: 6 }} />
+                <p className="mut" style={{ fontSize: 12, marginTop: 4 }}>Scales your name, bio and link text on your page.</p>
+              </div>
             </div>
           </div>
 
