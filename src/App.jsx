@@ -1181,7 +1181,10 @@ function Nav({ go, user }) {
         </nav>
         <div className="grow" />
         {user ? (
-          <Button size="sm" onClick={() => go("/dashboard")}>Go to dashboard</Button>
+          <>
+            <button className="nav-lnk hide-sm" onClick={() => go("/login")}>Log in</button>
+            <Button size="sm" onClick={() => go("/dashboard")}>Go to dashboard</Button>
+          </>
         ) : (
           <>
             <button className="nav-lnk hide-sm" onClick={() => go("/login")}>Log in</button>
@@ -1203,6 +1206,7 @@ function Nav({ go, user }) {
             <button className="nav-lnk" onClick={() => jump("features")}>Features</button>
             <button className="nav-lnk" onClick={() => jump("how")}>How it works</button>
             {!user && <button className="nav-lnk" onClick={() => { setOpen(false); go("/login"); }}>Log in</button>}
+            {user && <button className="nav-lnk" onClick={() => { setOpen(false); go("/login"); }}>Switch account</button>}
           </div>
         </div>
       )}
@@ -3278,6 +3282,10 @@ export default function App() {
     refresh,
     patchUser,
     async login(email, password) {
+      // supabase.auth.signInWithPassword() overwrites the active session only
+      // on success, so calling it directly while already logged in safely
+      // switches accounts without an explicit sign-out first — if the new
+      // credentials fail, the original session is left untouched.
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
