@@ -1381,45 +1381,6 @@ function Landing({ go, user }) {
           </div>
         </section>
 
-        <section className="sec" style={{ paddingTop: 0 }}>
-          <div className="wrap">
-            <div className="proof">
-              <h2 style={{ fontSize: "clamp(26px,3.4vw,36px)", maxWidth: "20ch" }}>Creators are already building here</h2>
-              <div className="stats">
-                <div>
-                  <div className="stat-n">50K+</div>
-                  <div className="stat-l">creators</div>
-                </div>
-                <div>
-                  <div className="stat-n">1M+</div>
-                  <div className="stat-l">links created</div>
-                </div>
-                <div>
-                  <div className="stat-n">25M+</div>
-                  <div className="stat-l">clicks generated</div>
-                </div>
-              </div>
-              <div className="tst">
-                {TESTIMONIALS.map((t) => (
-                  <div className="tst-c" key={t.n}>
-                    <p>{t.q}</p>
-                    <div className="tst-m">
-                      <Avatar name={t.n} size={36} bg="rgba(255,255,255,.14)" fg="#EDEDED" />
-                      <div>
-                        <b>{t.n}</b>
-                        <span>{t.r}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p style={{ color: "#9A9A9A", fontSize: 12.5, marginTop: 20 }}>
-                Sample content. Metrics and testimonials above are demo data for this prototype, not real customers.
-              </p>
-            </div>
-          </div>
-        </section>
-
         <section className="sec">
           <div className="wrap">
             <div className="cta-band">
@@ -1442,46 +1403,14 @@ function Footer({ go }) {
   const soon = (n) => toast(`${n} isn't part of this prototype yet.`, "bad");
   return (
     <footer className="foot">
-      <div className="wrap foot-grid">
-        <div>
-          <Logo onClick={() => go("/")} />
-          <p className="mut sm" style={{ marginTop: 12, maxWidth: "32ch" }}>
-            One page for everything you make. Built for people who publish in more than one place.
-          </p>
-          <div className="row" style={{ marginTop: 18, gap: 14, color: "var(--mut)" }}>
-            {["instagram", "x", "youtube", "github"].map((s) => (
-              <button key={s} onClick={() => soon(SOCIALS[s].label)} aria-label={SOCIALS[s].label} style={{ background: "none", border: 0, cursor: "pointer", color: "inherit", padding: 0 }}>
-                <SocialIcon name={s} size={19} />
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <h4>Product</h4>
-          <ul>
-            <li><button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })}>Features</button></li>
-            <li><button onClick={() => go("/signup")}>Get started</button></li>
-          </ul>
-        </div>
-        <div>
-          <h4>Resources</h4>
-          <ul>
-            <li><button onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>How it works</button></li>
-            <li><button onClick={() => soon("The help centre")}>Help centre</button></li>
-            <li><button onClick={() => soon("The changelog")}>Changelog</button></li>
-          </ul>
-        </div>
-        <div>
-          <h4>Company</h4>
-          <ul>
-            <li><button onClick={() => soon("The about page")}>About</button></li>
-            <li><button onClick={() => soon("The privacy policy")}>Privacy</button></li>
-            <li><button onClick={() => soon("The terms")}>Terms</button></li>
-          </ul>
-        </div>
+      <div className="wrap" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+        <Logo onClick={() => go("/")} />
+        <p className="mut sm" style={{ marginTop: 12, maxWidth: "32ch" }}>
+          One page for everything you make. Built for people who publish in more than one place.
+        </p>
       </div>
-      <div className="wrap mut tiny" style={{ marginTop: 34 }}>
-        © {new Date().getFullYear()} Tap-it. A prototype build — accounts and data live in this browser only.
+      <div className="wrap mut tiny" style={{ marginTop: 34, textAlign: "center" }}>
+        © {new Date().getFullYear()} Tap-it.
       </div>
     </footer>
   );
