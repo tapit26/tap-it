@@ -2073,31 +2073,6 @@ const NAV_ITEMS = [
   { id: "settings", label: "Settings", icon: I.gear },
 ];
 
-/* Writes a URL directly onto a physical NFC tag/card using the Web NFC API.
-   Only supported on Chrome for Android over HTTPS — everywhere else
-   (iOS, desktop, other browsers) there's no way for a webpage to talk to
-   NFC hardware, so we detect that and tell the user plainly. */
-async function writeUrlToNfc(url, toast) {
-  if (!("NDEFReader" in window)) {
-    toast("Writing to NFC needs Chrome on an Android phone with NFC turned on.", "bad");
-    return;
-  }
-  try {
-    const ndef = new window.NDEFReader();
-    toast("Hold your NFC card against the back of your phone…");
-    await ndef.write({ records: [{ recordType: "url", data: url }] });
-    toast("Card written! It'll open your page on tap.");
-  } catch (err) {
-    if (err?.name === "NotAllowedError") {
-      toast("NFC permission was blocked. Allow it and try again.", "bad");
-    } else if (err?.name === "NotSupportedError") {
-      toast("This device doesn't support NFC writing.", "bad");
-    } else {
-      toast("Couldn't write to the card. Try holding it steady against your phone.", "bad");
-    }
-  }
-}
-
 function DashboardShell({ go, route, children }) {
   const { user, logout } = useAuth();
   const toast = useToast();
@@ -2136,9 +2111,6 @@ function DashboardShell({ go, route, children }) {
             <Button variant="g" size="sm" onClick={copyLink} style={{ flex: 1 }}>{I.copy} Copy</Button>
             <Button variant="g" size="sm" onClick={() => go("/" + user.account.username)} aria-label="Open public page">{I.ext}</Button>
           </div>
-          <Button variant="g" size="sm" style={{ width: "100%", marginTop: 7 }} onClick={() => writeUrlToNfc(`https://${publicUrl}`, toast)}>
-            {I.nfc || "📶"} Write to NFC card
-          </Button>
         </div>
         <button className="side-l" style={{ marginTop: 8 }} onClick={() => { logout(); go("/", { replace: true }); toast("Logged out."); }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M15 17l5-5-5-5M20 12H9M12 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6" /></svg>
@@ -2157,7 +2129,6 @@ function DashboardShell({ go, route, children }) {
           </div>
           <div className="row">
             <Button variant="g" size="sm" onClick={copyLink} className="hide-sm">{I.copy} Copy link</Button>
-            <Button variant="g" size="sm" onClick={() => writeUrlToNfc(`https://${publicUrl}`, toast)} className="hide-sm">{I.nfc || "📶"} Write to NFC</Button>
             <Button size="sm" onClick={() => go("/" + user.account.username)}>{I.eyeSm} View page</Button>
             <Avatar src={user.profile.avatar} name={user.profile.displayName} size={34} />
           </div>
@@ -2886,13 +2857,6 @@ function Appearance() {
         }}
       >
         {I.copy} Copy your page's link
-      </button>
-      <button
-        className="btn btn-g only-sm"
-        style={{ width: "100%" }}
-        onClick={() => writeUrlToNfc(`https://tap-it-nu.vercel.app/#/${user.account.username}`, toast)}
-      >
-        {I.nfc || "📶"} Write to NFC card
       </button>
     </div>
   );
