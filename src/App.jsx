@@ -3480,9 +3480,15 @@ export default function App() {
     async changeEmail(nextEmail) {
       /* Supabase sends a confirmation link to the NEW address; the email
          on the account only actually changes once that link is clicked.
+         emailRedirectTo sends it back to a real hash route in this app
+         (same pattern as resetPasswordForEmail below) instead of the bare
+         Site URL, which the router doesn't recognise and 404s on.
          (If "Secure email change" is on in the Supabase project, it also
          sends a confirmation to the OLD address first.) */
-      const { error } = await supabase.auth.updateUser({ email: nextEmail });
+      const { error } = await supabase.auth.updateUser(
+        { email: nextEmail },
+        { emailRedirectTo: `${window.location.origin}${window.location.pathname}#/settings` }
+      );
       if (error) return { ok: false, error: error.message };
       return { ok: true };
     },
