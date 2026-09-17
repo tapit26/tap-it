@@ -3277,6 +3277,13 @@ function Settings({ go }) {
         <Button variant="d" style={{ marginTop: 16 }} onClick={() => setDelOpen(true)}>Delete my account</Button>
       </div>
 
+      <Button
+        variant="g"
+        className="only-sm"
+        style={{ width: "100%" }}
+        onClick={() => { logout(); go("/", { replace: true }); toast("Logged out."); }}
+      >Log out</Button>
+
       <Modal
         open={delOpen}
         onClose={() => { setDelOpen(false); setDelText(""); }}
