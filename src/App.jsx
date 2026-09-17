@@ -489,6 +489,7 @@ function recFromRow(row, links, analytics, email) {
       email: email || "",
       createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
       onboarded: !!row.onboarded,
+      deactivated: !!row.deactivated,
       google: false,
     },
     profile: {
@@ -3039,7 +3040,7 @@ function Analytics() {
 
 /* --- Settings --- */
 function Settings({ go }) {
-  const { user, patchUser, changeUsername, changePassword, changeEmail, deleteAccount, logout } = useAuth();
+  const { user, patchUser, changeUsername, changePassword, changeEmail, deactivateLink, deleteAccount, logout } = useAuth();
   const toast = useToast();
   const [username, setUsername] = useState(user.account.username);
   const [uState, setUState] = useState({ status: "idle", msg: "" });
@@ -3054,6 +3055,7 @@ function Settings({ go }) {
   const [pwBusy, setPwBusy] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const [delText, setDelText] = useState("");
+  const [deactBusy, setDeactBusy] = useState(false);
   const timer = useRef(null);
 
   useEffect(() => {
@@ -3105,6 +3107,14 @@ function Settings({ go }) {
     if (!res.ok) { setPwErr({ current: res.error }); return; }
     setPw({ current: "", next: "", confirm: "" });
     toast("Password updated.");
+  };
+
+  const doDeactivate = async () => {
+    setDeactBusy(true);
+    const res = await deactivateLink();
+    setDeactBusy(false);
+    if (!res.ok) { toast(res.error, "bad"); return; }
+    toast("Your page is deactivated. Log back in anytime to bring it back.");
   };
 
   return (
@@ -3194,6 +3204,22 @@ function Settings({ go }) {
           </div>
         </div>
       )}
+
+      <div className="card pad-l">
+        <h3 style={{ fontSize: 17 }}>Deactivate your page</h3>
+        <p className="mut sm" style={{ marginTop: 5 }}>
+          {user.account.deactivated
+            ? "Your page is currently deactivated — visitors see an \"unavailable\" message instead of your links. Log out and log back in anytime to bring it right back."
+            : `tap-it-nu.vercel.app/${user.account.username} will show as unavailable to visitors. Your links, page and account stay exactly as they are — just log back in anytime to reactivate it.`}
+        </p>
+        <Button
+          variant="q"
+          style={{ marginTop: 16 }}
+          loading={deactBusy}
+          disabled={user.account.deactivated}
+          onClick={doDeactivate}
+        >{user.account.deactivated ? "Page deactivated" : "Deactivate my page"}</Button>
+      </div>
 
       <div className="card pad-l" style={{ borderColor: "#F3D7DB" }}>
         <h3 style={{ fontSize: 17 }}>Delete account</h3>
@@ -3297,12 +3323,33 @@ function PublicProfile({ username, go }) {
   const theme = getTheme(rec.profile);
   const isOwner = me?.account.username === rec.account.username;
 
+  if (rec.account.deactivated && !isOwner) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
+        <div>
+          <Logo onClick={() => go("/")} />
+          <h1 style={{ fontSize: 30, marginTop: 24 }}>This page isn't available right now</h1>
+          <p className="mut" style={{ marginTop: 10, maxWidth: "40ch" }}>
+            The owner has temporarily deactivated it.
+          </p>
+          <div className="row" style={{ justifyContent: "center", marginTop: 24, gap: 10 }}>
+            <Button variant="g" onClick={() => go("/")}>Back to Tap-it</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: theme.bg }}>
       {isOwner && (
         <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(17,17,17,.92)", color: "#fff", padding: "9px 14px", backdropFilter: "blur(8px)" }}>
           <div className="row-b wrap" style={{ padding: 0 }}>
-            <span className="sm">You're viewing your own page. Clicks here count in analytics.</span>
+            <span className="sm">
+              {rec.account.deactivated
+                ? "Your page is deactivated — visitors see an unavailable message. Only you can see this preview."
+                : "You're viewing your own page. Clicks here count in analytics."}
+            </span>
             <Button size="sm" variant="g" onClick={() => go("/dashboard")}>Back to dashboard</Button>
           </div>
         </div>
@@ -3403,10 +3450,14 @@ export default function App() {
       }
       const { data: profileRow } = await supabase
         .from("profiles")
-        .select("username")
+        .select("username, deactivated")
         .eq("id", data.user.id)
         .maybeSingle();
       if (!profileRow) return { ok: false, error: "No profile found for this account." };
+      if (profileRow.deactivated) {
+        // Signing back in is what reactivates a deactivated page.
+        await supabase.from("profiles").update({ deactivated: false }).eq("id", data.user.id);
+      }
       const rec = await db.user(profileRow.username);
       setUser(rec);
       return { ok: true, user: { ...rec, onboarded: rec.account.onboarded } };
@@ -3490,6 +3541,13 @@ export default function App() {
         { emailRedirectTo: `${window.location.origin}${window.location.pathname}#/settings` }
       );
       if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    },
+    async deactivateLink() {
+      const { error } = await supabase.from("profiles").update({ deactivated: true }).eq("id", user.account.id);
+      if (error) return { ok: false, error: error.message };
+      const rec = await db.user(user.account.username);
+      setUser(rec);
       return { ok: true };
     },
     async deleteAccount() {
