@@ -442,6 +442,7 @@ const SOCIALS = {
   linkedin: { label: "LinkedIn", base: "linkedin.com/in/", path: "M6.2 21H3V9h3.2ZM4.6 7.5A1.9 1.9 0 1 1 6.5 5.6a1.9 1.9 0 0 1-1.9 1.9ZM21 21h-3.2v-6.1c0-1.6-.6-2.5-1.9-2.5a2 2 0 0 0-1.9 1.4 2.6 2.6 0 0 0-.1.9V21H10.7V9h3.2v1.7a3.6 3.6 0 0 1 3.2-1.9c2.2 0 3.9 1.5 3.9 4.7Z" },
   github: { label: "GitHub", base: "github.com/", path: "M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3a2.7 2.7 0 0 0-1.1-1.5c-.9-.6.1-.6.1-.6a2.1 2.1 0 0 1 1.6 1 2.2 2.2 0 0 0 3 .9 2.2 2.2 0 0 1 .6-1.4c-2.2-.2-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.7s.9-.3 2.8 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1a3.6 3.6 0 0 1 .1 2.7 3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.8-4.6 5a2.5 2.5 0 0 1 .7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2Z" },
   spotify: { label: "Spotify", base: "open.spotify.com/user/", path: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm4.3 14.5a.8.8 0 0 1-1.1.3 11.4 11.4 0 0 0-6-1.5 12 12 0 0 0-2.4.3.8.8 0 1 1-.4-1.5 13.5 13.5 0 0 1 2.8-.3 13 13 0 0 1 6.8 1.7.8.8 0 0 1 .3 1Zm1.2-3a1 1 0 0 1-1.3.3 14.3 14.3 0 0 0-7.2-1.8 15 15 0 0 0-3.1.4 1 1 0 0 1-.5-1.9 17 17 0 0 1 3.6-.4 16.2 16.2 0 0 1 8.2 2.1 1 1 0 0 1 .3 1.3Zm1.2-3.2a1.2 1.2 0 0 1-1.6.4A17.4 17.4 0 0 0 9.4 8.6a18.4 18.4 0 0 0-3.6.4 1.2 1.2 0 1 1-.6-2.3A20.8 20.8 0 0 1 9.4 6a19.8 19.8 0 0 1 9 2.1 1.2 1.2 0 0 1 .3 1.2Z" },
+  whatsapp: { label: "WhatsApp", base: "wa.me/", path: "M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.39 1.26 4.81L2 22l5.42-1.36a9.87 9.87 0 0 0 4.62 1.15h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm5.8 14.03c-.24.68-1.19 1.25-1.95 1.41-.52.11-1.2.2-3.48-.75-2.92-1.21-4.8-4.17-4.94-4.37-.14-.19-1.18-1.57-1.18-3 0-1.43.75-2.13 1.02-2.42.24-.26.62-.38.99-.38.12 0 .23 0 .33.01.29.01.44.03.63.49.24.58.81 2.02.88 2.17.07.15.12.32.02.51-.09.19-.14.31-.28.48-.14.16-.29.36-.42.48-.14.13-.28.27-.12.54.16.27.71 1.17 1.53 1.9 1.05.94 1.93 1.23 2.21 1.37.28.14.44.12.6-.07.16-.19.68-.79.87-1.06.18-.27.36-.22.6-.13.24.09 1.53.72 1.79.85.26.13.44.19.5.3.06.11.06.6-.18 1.28Z" },
   email: { label: "Email", base: "mailto:", path: "M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 2-8 5.2L4 6Zm0 12H4V8.1l7.5 4.9a1 1 0 0 0 1 0L20 8.1Z" },
   website: { label: "Website", base: "", path: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm7.9 9h-3.1a15.4 15.4 0 0 0-1.3-5.6A8 8 0 0 1 19.9 11ZM12 4c.9 1.1 2 3.3 2.2 7H9.8C10 7.3 11.1 5.1 12 4ZM8.5 5.4A15.4 15.4 0 0 0 7.2 11H4.1a8 8 0 0 1 4.4-5.6ZM4.1 13h3.1a15.4 15.4 0 0 0 1.3 5.6A8 8 0 0 1 4.1 13ZM12 20c-.9-1.1-2-3.3-2.2-7h4.4c-.2 3.7-1.3 5.9-2.2 7Zm3.5-1.4a15.4 15.4 0 0 0 1.3-5.6h3.1a8 8 0 0 1-4.4 5.6Z" },
 };
@@ -677,6 +678,18 @@ const RESERVED = new Set([
 
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+
+/* wa.me links just need the phone number's digits, country code included,
+   no +, spaces, dashes or leading zeros after the country code. */
+function whatsappDigits(raw) {
+  const digits = String(raw || "").replace(/[^\d]/g, "");
+  return digits;
+}
+function whatsappUrl(raw) {
+  const digits = whatsappDigits(raw);
+  if (digits.length < 8 || digits.length > 15) return null;
+  return "https://wa.me/" + digits;
+}
 
 const clean = (s, max = 240) =>
   String(s ?? "").replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, max);
@@ -2300,6 +2313,11 @@ function LinksPage() {
         const addr = (draft.url || "").replace(/^mailto:/i, "").trim();
         if (!addr) next.url = "Add your email address.";
         else if (!EMAIL_RE.test(addr)) next.url = "That email address doesn't look right.";
+      } else if (draft.icon === "whatsapp") {
+        const phone = (draft.url || "").replace(/^https:\/\/wa\.me\//i, "").trim();
+        url = whatsappUrl(phone);
+        if (!phone) next.url = "Add your phone number.";
+        else if (!url) next.url = "Add a valid phone number with country code.";
       } else if (!draft.url.trim()) next.url = "Add the destination URL.";
       else if (!url) next.url = "That URL isn't valid. Try something like example.com/page.";
     }
@@ -2491,6 +2509,30 @@ function LinksPage() {
                       />
                     </div>
                   </Field>
+                ) : draft.icon === "whatsapp" ? (
+                  <Field label="Phone number" id="lk-url" error={errs.url} hint="Include the country code. Visitors tap this to open a chat with you on WhatsApp.">
+                    <div className="row" style={{ gap: 0, alignItems: "stretch" }}>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          display: "flex", alignItems: "center", padding: "0 10px",
+                          background: "var(--tint)", border: "1px solid var(--line)", borderRight: "none",
+                          borderRadius: "12px 0 0 12px", color: "var(--mut)", fontSize: 14, fontWeight: 600, whiteSpace: "nowrap",
+                        }}
+                      >
+                        wa.me/
+                      </span>
+                      <TextInput
+                        id="lk-url"
+                        value={(draft.url || "").replace(/^https:\/\/wa\.me\//i, "")}
+                        placeholder="+1 555 123 4567"
+                        inputMode="tel" spellCheck="false" autoCapitalize="none"
+                        style={{ borderRadius: "0 12px 12px 0" }}
+                        onChange={(e) => { setDraft((d) => ({ ...d, url: "https://wa.me/" + e.target.value })); setErrs((p) => ({ ...p, url: null })); }}
+                        error={errs.url}
+                      />
+                    </div>
+                  </Field>
                 ) : (
                   <Field label="URL" id="lk-url" error={errs.url} hint="https:// is added for you if you leave it off.">
                     <TextInput
@@ -2574,12 +2616,14 @@ function Appearance() {
 
   const addSocial = () => {
     const handle = clean(socialDraft.handle, 80).replace(/^@/, "");
-    if (!handle) { toast("Add your handle first.", "bad"); return; }
+    if (!handle) { toast(socialDraft.platform === "whatsapp" ? "Add your phone number first." : "Add your handle first.", "bad"); return; }
     const meta = SOCIALS[socialDraft.platform];
     const url = socialDraft.platform === "email"
       ? (EMAIL_RE.test(handle) ? "mailto:" + handle : null)
+      : socialDraft.platform === "whatsapp"
+      ? whatsappUrl(handle)
       : safeUrl(/^https?:\/\//i.test(handle) ? handle : meta.base + handle);
-    if (!url) { toast("That handle doesn't produce a valid link.", "bad"); return; }
+    if (!url) { toast(socialDraft.platform === "whatsapp" ? "Add a valid phone number with country code." : "That handle doesn't produce a valid link.", "bad"); return; }
     if ((p.socials || []).some((s) => s.platform === socialDraft.platform)) { toast(`${meta.label} is already on your page.`, "bad"); return; }
     upd({ socials: [...(p.socials || []), { platform: socialDraft.platform, url }] });
     setSocialDraft({ platform: "instagram", handle: "" });
@@ -2831,14 +2875,18 @@ function Appearance() {
                 <input
                   className="inp"
                   style={{ flex: 1, minWidth: 150 }}
-                  placeholder={socialDraft.platform === "email" ? "you@example.com" : "yourhandle"}
+                  placeholder={socialDraft.platform === "email" ? "you@example.com" : socialDraft.platform === "whatsapp" ? "+1 555 123 4567" : "yourhandle"}
+                  inputMode={socialDraft.platform === "whatsapp" ? "tel" : undefined}
                   value={socialDraft.handle}
                   onChange={(e) => setSocialDraft((d) => ({ ...d, handle: e.target.value }))}
                   onKeyDown={(e) => e.key === "Enter" && addSocial()}
-                  aria-label="Handle"
+                  aria-label={socialDraft.platform === "whatsapp" ? "Phone number" : "Handle"}
                 />
                 <Button variant="g" onClick={addSocial}>Add</Button>
               </div>
+              {socialDraft.platform === "whatsapp" && (
+                <p className="mut tiny">Include the country code, e.g. +1 for the US.</p>
+              )}
             </div>
           </div>
 
