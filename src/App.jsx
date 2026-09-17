@@ -696,6 +696,13 @@ function usernameError(raw) {
   return null;
 }
 
+function emailError(raw) {
+  const e = String(raw || "").trim();
+  if (!e) return "Enter an email address.";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return "That doesn't look like a valid email.";
+  return null;
+}
+
 function passwordScore(pw) {
   let s = 0;
   if (pw.length >= 8) s++;
@@ -3032,12 +3039,16 @@ function Analytics() {
 
 /* --- Settings --- */
 function Settings({ go }) {
-  const { user, patchUser, changeUsername, changePassword, deleteAccount, logout } = useAuth();
+  const { user, patchUser, changeUsername, changePassword, changeEmail, deleteAccount, logout } = useAuth();
   const toast = useToast();
   const [username, setUsername] = useState(user.account.username);
   const [uState, setUState] = useState({ status: "idle", msg: "" });
   const [uBusy, setUBusy] = useState(false);
   const [name, setName] = useState(user.account.name);
+  const [email, setEmail] = useState(user.account.email);
+  const [emailErr, setEmailErr] = useState(null);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
   const [pwErr, setPwErr] = useState({});
   const [pwBusy, setPwBusy] = useState(false);
@@ -3065,6 +3076,19 @@ function Settings({ go }) {
     setUBusy(false);
     if (!res.ok) { toast(res.error, "bad"); return; }
     toast(`Your page is now tap-it-nu.vercel.app/${res.username}.`);
+  };
+
+  const saveEmail = async () => {
+    const err = emailError(email);
+    if (err) { setEmailErr(err); return; }
+    if (clean(email).toLowerCase() === user.account.email.toLowerCase()) return;
+    setEmailErr(null);
+    setEmailBusy(true);
+    const res = await changeEmail(clean(email));
+    setEmailBusy(false);
+    if (!res.ok) { setEmailErr(res.error); return; }
+    setEmailSent(true);
+    toast(`Check ${clean(email)} for a link to confirm the change.`);
   };
 
   const savePassword = async () => {
@@ -3123,15 +3147,32 @@ function Settings({ go }) {
           <Field label="Account name" id="st-name">
             <TextInput id="st-name" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} />
           </Field>
-          <Field label="Email" id="st-email" hint="Email changes need verification, which this prototype doesn't run.">
-            <TextInput id="st-email" value={user.account.email} disabled readOnly />
+          <Field
+            label="Email"
+            id="st-email"
+            error={emailErr}
+            hint={emailSent ? `Confirmation link sent to ${clean(email)}. Your email won't change until you click it.` : "We'll send a confirmation link to the new address before it takes effect."}
+          >
+            <TextInput
+              id="st-email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setEmailErr(null); setEmailSent(false); }}
+            />
           </Field>
-          <div>
+          <div className="row" style={{ gap: 10 }}>
             <Button
               variant="g"
               disabled={clean(name) === user.account.name || !clean(name)}
               onClick={async () => { await patchUser((rec) => { rec.account.name = clean(name, 60); }); toast("Account name saved."); }}
             >Save account name</Button>
+            <Button
+              variant="g"
+              loading={emailBusy}
+              disabled={clean(email).toLowerCase() === user.account.email.toLowerCase() || !clean(email)}
+              onClick={saveEmail}
+            >Update email</Button>
           </div>
         </div>
       </div>
@@ -3433,6 +3474,15 @@ export default function App() {
       });
       if (reauthErr) return { ok: false, error: "That's not your current password." };
       const { error } = await supabase.auth.updateUser({ password: next });
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    },
+    async changeEmail(nextEmail) {
+      /* Supabase sends a confirmation link to the NEW address; the email
+         on the account only actually changes once that link is clicked.
+         (If "Secure email change" is on in the Supabase project, it also
+         sends a confirmation to the OLD address first.) */
+      const { error } = await supabase.auth.updateUser({ email: nextEmail });
       if (error) return { ok: false, error: error.message };
       return { ok: true };
     },
