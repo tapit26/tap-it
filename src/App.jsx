@@ -55,6 +55,11 @@ html, body { margin:0; padding:0; }
   font-size: 16px;
   line-height: 1.55;
 }
+html, body { margin:0; padding:0; }
+html[data-theme="dark"], body[data-theme="dark"] { background:#121212; }
+html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
+.pch { min-height:100vh; width:100%; background:var(--bg); overflow-x:hidden; }
+
 .pch[data-theme="dark"] {
   --p-700:#F2F2F2;
   --bg:#121212; --ink:#F2F2F2; --mut:#9C9C9C; --w:#1C1C1C;
@@ -113,11 +118,11 @@ html, body { margin:0; padding:0; }
 .btn-p:hover:not(:disabled) { background: var(--p-600); transform: translateY(-1px); }
 .btn-p:active:not(:disabled) { transform: translateY(0); }
 .btn-g, .btn.btn-g { background: var(--w); color: var(--ink); border-color: var(--line); box-shadow: var(--sh-1); }
-.btn-g:hover:not(:disabled) { border-color:#CFCFCF; background:#FAFAFA; }
+.btn-g:hover:not(:disabled) { border-color:var(--mut); background:var(--tint); }
 .btn-q, .btn.btn-q { background: transparent; color: var(--mut); }
 .btn-q:hover:not(:disabled) { background: var(--tint); color: var(--ink); }
 .btn-d, .btn.btn-d { background: var(--bad-bg); color:#B3323C; }
-.btn-d:hover:not(:disabled) { background:#FADCE0; }
+.btn-d:hover:not(:disabled) { background:var(--bad-bg); }
 .btn-blk { width:100%; }
 .btn-sm { padding:8px 14px; font-size:14px; }
 .btn-lg { padding:14px 26px; font-size:16.5px; }
@@ -302,13 +307,13 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .lrow:hover { box-shadow: var(--sh-2); }
 .lrow.drag { opacity:.4; }
 .lrow.over { border-color: var(--p); box-shadow: 0 0 0 3px rgba(17,17,17,.14); }
-.lrow.off { background:#FAFAFA; }
+.lrow.off { background:var(--tint); }
 .grip { display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px; color:#B0B0B0; cursor:grab; background:none; border:0; border-radius:8px; }
 .grip:hover { color:var(--p); background:var(--tint); }
 .grip:active { cursor:grabbing; }
 .icobtn { background:none; border:1px solid transparent; border-radius:10px; padding:8px; color:var(--mut); cursor:pointer; display:flex; transition: background .16s, color .16s; }
 .icobtn:hover { background:var(--tint); color:var(--ink); }
-.icobtn.danger:hover { background:var(--bad-bg); color:#B3323C; }
+.icobtn.danger:hover { background:var(--bad-bg); color:var(--bad); }
 .sw { width:42px; height:24px; border-radius:99px; background:#D6D6D6; border:0; position:relative; cursor:pointer; flex:none; transition: background .2s ease; }
 .sw i { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.22); transition: transform .2s cubic-bezier(.2,.8,.3,1); }
 .sw[aria-checked="true"] { background: var(--p); }
@@ -354,7 +359,7 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 /* --- skeleton / empty --- */
 .sk { background: linear-gradient(90deg,#EDEDED 25%,#F7F7F7 37%,#EDEDED 63%); background-size:400% 100%; animation: shim 1.3s ease infinite; border-radius:10px; }
 @keyframes shim { from { background-position:100% 0 } to { background-position:0 0 } }
-.empty { text-align:center; padding:52px 24px; border:1px dashed #D6D6D6; border-radius:var(--r-l); background: #FAFAFA; }
+.empty { text-align:center; padding:52px 24px; border:1px dashed var(--line); border-radius:var(--r-l); background: var(--tint); }
 .empty-i { width:52px; height:52px; border-radius:15px; background:var(--tint); color:var(--p); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
 
 /* --- responsive --- */
@@ -646,6 +651,7 @@ const db = {
         button_style: profile.buttonStyle || "soft",
         radius: profile.radius || "round",
         font: profile.font || "manrope",
+        socials: profile.socials || [],
         onboarded: !!account.onboarded,
       })
       .eq("id", account.id);
@@ -674,7 +680,8 @@ const db = {
       const keepIds = new Set(links.map((l) => l.id));
       const toDelete = (existing || []).map((r) => r.id).filter((id) => !keepIds.has(id));
       if (toDelete.length) {
-        await supabase.from("links").delete().in("id", toDelete);
+        const { error: delErr } = await supabase.from("links").delete().in("id", toDelete);
+        if (delErr) throw new Error("Couldn't delete a link: " + delErr.message);
       }
     }
 
@@ -2127,6 +2134,7 @@ const NAV_ITEMS = [
 
 function DashboardShell({ go, route, children }) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const toast = useToast();
   const section = route.path.replace(/^\/dashboard\/?/, "");
   const publicUrl = `tap-it-nu.vercel.app/#/${user.account.username}`;
@@ -2181,6 +2189,16 @@ function DashboardShell({ go, route, children }) {
           </div>
           <div className="row">
             <Button variant="g" size="sm" onClick={copyLink} className="hide-sm">{I.copy} Copy link</Button>
+            <button
+              className="sw"
+              role="switch"
+              aria-checked={theme === "dark"}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={toggleTheme}
+            >
+              <i />
+            </button>
             <Button size="sm" onClick={() => go("/" + user.account.username)}>{I.eyeSm} View page</Button>
             <Avatar src={user.profile.avatar} name={user.profile.displayName} size={34} />
           </div>
@@ -3134,6 +3152,7 @@ function Settings({ go }) {
   const [pwBusy, setPwBusy] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const [delText, setDelText] = useState("");
+  const [delBusy, setDelBusy] = useState(false);
   const [deactBusy, setDeactBusy] = useState(false);
   const timer = useRef(null);
 
@@ -3324,12 +3343,20 @@ function Settings({ go }) {
             <Button variant="q" onClick={() => { setDelOpen(false); setDelText(""); }}>Cancel</Button>
             <Button
               variant="d"
-              disabled={delText !== user.account.username}
+              disabled={delText.trim().toLowerCase() !== user.account.username.toLowerCase()}
+              loading={delBusy}
               onClick={async () => {
-                await deleteAccount();
-                setDelOpen(false);
-                toast("Account deleted.");
-                go("/", { replace: true });
+                setDelBusy(true);
+                try {
+                  await deleteAccount();
+                  setDelOpen(false);
+                  toast("Account deleted.");
+                  go("/", { replace: true });
+                } catch (err) {
+                  toast(err?.message || "Couldn't delete your account. Try again.", "bad");
+                } finally {
+                  setDelBusy(false);
+                }
               }}
             >Delete permanently</Button>
           </>
@@ -3483,6 +3510,10 @@ export default function App() {
       return next;
     });
   }, []);
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const toast = useCallback((msg, kind = "ok", action) => {
     const id = uid();
@@ -3524,8 +3555,13 @@ export default function App() {
     const rec = await db.user(user.account.username);
     if (!rec) return;
     mutate(rec);
-    await db.saveUser(rec);
-    setUser(rec);
+    try {
+      await db.saveUser(rec);
+      setUser(rec);
+    } catch (err) {
+      toast(err?.message || "Couldn't save that change. Try again.", "bad");
+      throw err;
+    }
   }, [user?.account?.username]);
 
   const auth = useMemo(() => ({
@@ -3652,9 +3688,12 @@ export default function App() {
          This removes the user's own data and signs them out; fully
          deleting the auth account needs a small server-side function
          (e.g. a Supabase Edge Function using the service role key). */
-      await supabase.from("links").delete().eq("owner_id", user.account.id);
-      await supabase.from("profiles").delete().eq("id", user.account.id);
-      await supabase.auth.signOut();
+      const { error: linksErr } = await supabase.from("links").delete().eq("owner_id", user.account.id);
+      if (linksErr) throw new Error("Couldn't delete your links: " + linksErr.message);
+      const { error: profileErr } = await supabase.from("profiles").delete().eq("id", user.account.id);
+      if (profileErr) throw new Error("Couldn't delete your profile: " + profileErr.message);
+      const { error: signOutErr } = await supabase.auth.signOut();
+      if (signOutErr) throw new Error(signOutErr.message);
       setUser(null);
     },
   }), [user, patchUser, refresh]);
@@ -3719,7 +3758,7 @@ export default function App() {
         <ThemeCtx.Provider value={{ theme, toggleTheme }}>
           <AuthCtx.Provider value={auth}>
             {view}
-            {!isPublicProfile && (
+            {!isPublicProfile && !isDash && (
               <button
                 className="theme-toggle"
                 onClick={toggleTheme}
