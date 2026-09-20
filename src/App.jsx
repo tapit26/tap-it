@@ -412,7 +412,9 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
   .th-grid { grid-template-columns:1fr 1fr; }
   .pick { grid-template-columns:1fr; }
   .toasts { left:14px; right:14px; bottom:14px; width:auto; }
-  .lrow-actions { width:100%; justify-content:flex-end; margin-left:0; padding-left:32px; }
+  .lrow { flex-direction:column; align-items:stretch; }
+  .lrow-main { flex-basis:auto; width:100%; }
+  .lrow-actions { width:100%; justify-content:flex-end; margin-left:0; padding-left:0; }
 }
 @media (max-width: 380px) {
   .pch { font-size:15.5px; }
