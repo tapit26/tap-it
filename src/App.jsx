@@ -633,7 +633,7 @@ const db = {
   async saveUser(rec) {
     const { account, profile, links } = rec;
 
-    await supabase
+    const { error: profileErr } = await supabase
       .from("profiles")
       .update({
         display_name: profile.displayName ?? account.name ?? "",
@@ -664,6 +664,7 @@ const db = {
         onboarded: !!account.onboarded,
       })
       .eq("id", account.id);
+    if (profileErr) throw new Error("Couldn't save your changes: " + profileErr.message);
 
     if (links) {
       const rows = links.map((l, i) => ({
