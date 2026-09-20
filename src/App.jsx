@@ -75,6 +75,15 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .pch[data-theme="dark"] .pill-bad { color: var(--bad); }
 .pch[data-theme="dark"] img { filter: brightness(.95); }
 
+.theme-sw { width:52px; height:26px; }
+.theme-sw .sw-ico { position:absolute; top:50%; transform:translateY(-50%); width:14px; height:14px; display:flex; align-items:center; justify-content:center; pointer-events:none; }
+.theme-sw .sw-ico svg { width:12px; height:12px; }
+.theme-sw .sw-ico-l { left:6px; color:#B8860B; }
+.theme-sw .sw-ico-r { right:6px; color:#D6D6D6; }
+.theme-sw.sw[aria-checked="true"] .sw-ico-r { color:#EDEDED; }
+.theme-sw i { width:20px; height:20px; z-index:1; }
+.theme-sw.sw[aria-checked="true"] i { transform: translateX(26px); }
+
 .theme-toggle {
   position: fixed; bottom: 18px; right: 18px; z-index: 60;
   width: 44px; height: 44px; border-radius: 999px;
@@ -2190,13 +2199,15 @@ function DashboardShell({ go, route, children }) {
           <div className="row">
             <Button variant="g" size="sm" onClick={copyLink} className="hide-sm">{I.copy} Copy link</Button>
             <button
-              className="sw"
+              className="sw theme-sw"
               role="switch"
               aria-checked={theme === "dark"}
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
               title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
               onClick={toggleTheme}
             >
+              <span className="sw-ico sw-ico-l" aria-hidden="true">{I.sun}</span>
+              <span className="sw-ico sw-ico-r" aria-hidden="true">{I.moon}</span>
               <i />
             </button>
             <Button size="sm" onClick={() => go("/" + user.account.username)}>{I.eyeSm} View page</Button>
@@ -2663,7 +2674,8 @@ function Appearance() {
     toast("Appearance updated.");
   };
 
-  const addSocial = () => {
+  const [socialBusy, setSocialBusy] = useState(false);
+  const addSocial = async () => {
     const handle = clean(socialDraft.handle, 80).replace(/^@/, "");
     if (!handle) { toast(socialDraft.platform === "whatsapp" ? "Add your phone number first." : "Add your handle first.", "bad"); return; }
     const meta = SOCIALS[socialDraft.platform];
@@ -2674,8 +2686,30 @@ function Appearance() {
       : safeUrl(/^https?:\/\//i.test(handle) ? handle : meta.base + handle);
     if (!url) { toast(socialDraft.platform === "whatsapp" ? "Add a valid phone number with country code." : "That handle doesn't produce a valid link.", "bad"); return; }
     if ((p.socials || []).some((s) => s.platform === socialDraft.platform)) { toast(`${meta.label} is already on your page.`, "bad"); return; }
-    upd({ socials: [...(p.socials || []), { platform: socialDraft.platform, url }] });
-    setSocialDraft({ platform: "instagram", handle: "" });
+    setSocialBusy(true);
+    try {
+      const nextSocials = [...(p.socials || []), { platform: socialDraft.platform, url }];
+      await patchUser((rec) => { rec.profile = { ...rec.profile, socials: nextSocials }; });
+      upd({ socials: nextSocials });
+      setSocialDraft({ platform: "instagram", handle: "" });
+      toast(`${meta.label} added.`);
+    } catch (err) {
+      toast(err?.message || "Couldn't save that. Try again.", "bad");
+    } finally {
+      setSocialBusy(false);
+    }
+  };
+
+  const removeSocial = async (platform) => {
+    const label = SOCIALS[platform]?.label || platform;
+    const nextSocials = (p.socials || []).filter((x) => x.platform !== platform);
+    try {
+      await patchUser((rec) => { rec.profile = { ...rec.profile, socials: nextSocials }; });
+      upd({ socials: nextSocials });
+      toast(`${label} removed.`);
+    } catch (err) {
+      toast(err?.message || "Couldn't save that. Try again.", "bad");
+    }
   };
 
   const previewUser = { ...user, profile: p };
@@ -2908,7 +2942,7 @@ function Appearance() {
                     <div className="sm" style={{ fontWeight: 600 }}>{SOCIALS[s.platform].label}</div>
                     <div className="mut tiny trunc">{prettyUrl(s.url)}</div>
                   </div>
-                  <button className="icobtn danger" aria-label={`Remove ${SOCIALS[s.platform].label}`} onClick={() => upd({ socials: p.socials.filter((x) => x.platform !== s.platform) })}>{I.trash}</button>
+                  <button className="icobtn danger" aria-label={`Remove ${SOCIALS[s.platform].label}`} onClick={() => removeSocial(s.platform)}>{I.trash}</button>
                 </div>
               ))}
               <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -2931,7 +2965,7 @@ function Appearance() {
                   onKeyDown={(e) => e.key === "Enter" && addSocial()}
                   aria-label={socialDraft.platform === "whatsapp" ? "Phone number" : "Handle"}
                 />
-                <Button variant="g" onClick={addSocial}>Add</Button>
+                <Button variant="g" onClick={addSocial} loading={socialBusy}>Add</Button>
               </div>
               {socialDraft.platform === "whatsapp" && (
                 <p className="mut tiny">Include the country code, e.g. +1 for the US.</p>
