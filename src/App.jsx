@@ -380,7 +380,7 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
   .lede { max-width:none; }
   .f-grid, .steps, .tst { grid-template-columns:1fr 1fr; }
   .step { border-bottom:1px solid var(--line); }
-  .dash-split { grid-template-columns:1fr; }
+  .dash-split { grid-template-columns:minmax(0,1fr); }
   .dash-prev { position:static; }
   .dash-prev .phone { margin: 0 auto; }
   .ob { grid-template-columns:1fr; }
@@ -388,7 +388,7 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
   .ob-inline { display:block; }
 }
 @media (max-width: 860px) {
-  .dash { grid-template-columns:1fr; }
+  .dash { grid-template-columns:minmax(0,1fr); }
   .side { display:none; }
   .mobile-bar { display:flex; position:sticky; bottom:0; z-index:40; background:var(--w); background:color-mix(in srgb, var(--w) 94%, transparent); backdrop-filter:blur(12px); border-top:1px solid var(--line); padding:8px 6px calc(8px + env(safe-area-inset-bottom)); }
   .mobile-bar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:0; padding:7px 2px; border-radius:12px; color:var(--mut); font-size:11px; font-weight:600; cursor:pointer; }
