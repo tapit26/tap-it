@@ -30,8 +30,8 @@ import React, {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Oswald:wght@500;600;700&family=Caveat:wght@600;700&family=Space+Mono:wght@400;700&display=swap');
 
-html, body { margin:0; padding:0; }
-#root { min-height:100vh; }
+html, body { margin:0; padding:0; overflow-x:hidden; max-width:100%; }
+#root { min-height:100vh; overflow-x:hidden; }
 
 .pch, .pch *, .pch *::before, .pch *::after { box-sizing: border-box; }
 .pch {
@@ -55,7 +55,6 @@ html, body { margin:0; padding:0; }
   font-size: 16px;
   line-height: 1.55;
 }
-html, body { margin:0; padding:0; }
 html[data-theme="dark"], body[data-theme="dark"] { background:#121212; }
 html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .pch { min-height:100vh; width:100%; background:var(--bg); overflow-x:hidden; }
