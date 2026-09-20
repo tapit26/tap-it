@@ -180,8 +180,8 @@ textarea.inp { resize:vertical; min-height:86px; line-height:1.5; }
 .pill-w { background: var(--warn-bg); color: var(--warn); }
 
 /* --- nav --- */
-.nav { position:sticky; top:0; z-index:50; background: rgba(250,250,250,.78); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); border-bottom:1px solid transparent; transition: border-color .2s, background .2s; }
-.nav.stuck { border-bottom-color: var(--line); background: rgba(250,250,250,.92); }
+.nav { position:sticky; top:0; z-index:50; background: var(--bg); background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(14px) saturate(160%); -webkit-backdrop-filter: blur(14px) saturate(160%); border-bottom:1px solid transparent; transition: border-color .2s, background .2s; }
+.nav.stuck { border-bottom-color: var(--line); background: var(--bg); background: color-mix(in srgb, var(--bg) 92%, transparent); }
 .nav-in { height:68px; display:flex; align-items:center; gap:8px; }
 .nav-lnk { padding:9px 13px; border-radius:10px; font-size:14.5px; font-weight:500; color:var(--mut); background:none; border:0; cursor:pointer; }
 .nav-lnk:hover { color: var(--ink); background: var(--tint); }
@@ -266,6 +266,7 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 /* --- cta band --- */
 .cta-band { border-radius: var(--r-xl); padding:64px 40px; text-align:center; background:
    radial-gradient(70% 120% at 50% 0%, #F0F0F0, #FAFAFA 72%); border:1px solid var(--line); }
+.pch[data-theme="dark"] .cta-band { background: radial-gradient(70% 120% at 50% 0%, #202020, #1A1A1A 72%); }
 .cta-band h2 { font-size: clamp(30px,4.4vw,46px); }
 .cta-band p { color:var(--mut); margin:14px auto 0; max-width:44ch; font-size:16.5px; }
 
@@ -313,7 +314,8 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .mobile-bar { display:none; }
 
 /* --- link rows --- */
-.lrow { background:var(--w); border:1px solid var(--line); border-radius:var(--r-l); padding:14px 14px 14px 8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; transition: box-shadow .18s ease, border-color .18s ease, opacity .18s; }
+.lrow { background:var(--w); border:1px solid var(--line); border-radius:var(--r-l); padding:14px 14px 14px 8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; overflow:hidden; transition: box-shadow .18s ease, border-color .18s ease, opacity .18s; }
+.lrow-main { display:flex; align-items:center; gap:10px; flex:1 1 240px; min-width:0; }
 .lrow-actions { display:flex; align-items:center; gap:8px; flex:none; margin-left:auto; }
 .lrow:hover { box-shadow: var(--sh-2); }
 .lrow.drag { opacity:.4; }
@@ -368,7 +370,7 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 @keyframes tin { from { opacity:0; transform: translateY(14px) } }
 
 /* --- skeleton / empty --- */
-.sk { background: linear-gradient(90deg,#EDEDED 25%,#F7F7F7 37%,#EDEDED 63%); background-size:400% 100%; animation: shim 1.3s ease infinite; border-radius:10px; }
+.sk { background: linear-gradient(90deg,var(--tint) 25%,var(--tint-2) 37%,var(--tint) 63%); background-size:400% 100%; animation: shim 1.3s ease infinite; border-radius:10px; }
 @keyframes shim { from { background-position:100% 0 } to { background-position:0 0 } }
 .empty { text-align:center; padding:52px 24px; border:1px dashed var(--line); border-radius:var(--r-l); background: var(--tint); }
 .empty-i { width:52px; height:52px; border-radius:15px; background:var(--tint); color:var(--p); display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
@@ -2480,26 +2482,28 @@ function LinksPage() {
                 onDragLeave={() => setOverId((o) => (o === l.id ? null : o))}
                 onDrop={(e) => { e.preventDefault(); onDrop(l.id); }}
               >
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <button className="grip" aria-label={`Reorder ${l.title}`} title="Drag to reorder">{I.grip}</button>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <button className="icobtn" style={{ padding: 3 }} onClick={() => move(l.id, -1)} disabled={i === 0} aria-label="Move up">{I.up}</button>
-                    <button className="icobtn" style={{ padding: 3 }} onClick={() => move(l.id, 1)} disabled={i === links.length - 1} aria-label="Move down">{I.down}</button>
+                <div className="lrow-main">
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <button className="grip" aria-label={`Reorder ${l.title}`} title="Drag to reorder">{I.grip}</button>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <button className="icobtn" style={{ padding: 3 }} onClick={() => move(l.id, -1)} disabled={i === 0} aria-label="Move up">{I.up}</button>
+                      <button className="icobtn" style={{ padding: 3 }} onClick={() => move(l.id, 1)} disabled={i === links.length - 1} aria-label="Move down">{I.down}</button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grow" style={{ minWidth: 0 }}>
-                  <div className="row" style={{ gap: 8 }}>
-                    {l.icon && <span style={{ color: "var(--p)", display: "flex" }}><SocialIcon name={l.icon} size={17} /></span>}
-                    <span className="trunc" style={{ fontWeight: 600 }}>{l.title}</span>
-                    {l.type === "header" && <span className="pill pill-n">Header</span>}
-                    {l.badge && <span className="pill pill-w">{l.badge}</span>}
-                  </div>
-                  {l.type !== "header" && (
-                    <div className="mut tiny trunc" style={{ marginTop: 3 }}>{prettyUrl(l.url)}</div>
-                  )}
-                  <div className="mut tiny" style={{ marginTop: 5 }}>
-                    {l.type === "header" ? "Section label" : `${l.clicks || 0} click${(l.clicks || 0) === 1 ? "" : "s"} all time`}
+                  <div className="grow" style={{ minWidth: 0 }}>
+                    <div className="row" style={{ gap: 8 }}>
+                      {l.icon && <span style={{ color: "var(--p)", display: "flex" }}><SocialIcon name={l.icon} size={17} /></span>}
+                      <span className="trunc" style={{ fontWeight: 600 }}>{l.title}</span>
+                      {l.type === "header" && <span className="pill pill-n">Header</span>}
+                      {l.badge && <span className="pill pill-w">{l.badge}</span>}
+                    </div>
+                    {l.type !== "header" && (
+                      <div className="mut tiny trunc" style={{ marginTop: 3 }}>{prettyUrl(l.url)}</div>
+                    )}
+                    <div className="mut tiny" style={{ marginTop: 5 }}>
+                      {l.type === "header" ? "Section label" : `${l.clicks || 0} click${(l.clicks || 0) === 1 ? "" : "s"} all time`}
+                    </div>
                   </div>
                 </div>
 
