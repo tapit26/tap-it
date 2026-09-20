@@ -78,9 +78,10 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .theme-sw { width:52px; height:26px; }
 .theme-sw .sw-ico { position:absolute; top:50%; transform:translateY(-50%); width:14px; height:14px; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .theme-sw .sw-ico svg { width:12px; height:12px; }
-.theme-sw .sw-ico-l { left:6px; color:#B8860B; }
-.theme-sw .sw-ico-r { right:6px; color:#D6D6D6; }
-.theme-sw.sw[aria-checked="true"] .sw-ico-r { color:#EDEDED; }
+.theme-sw .sw-ico-l { left:6px; color:#C9890A; }
+.theme-sw .sw-ico-r { right:6px; color:#5A5A5A; }
+.theme-sw.sw[aria-checked="true"] .sw-ico-r { color:#F2F2F2; }
+.theme-sw.sw[aria-checked="true"] .sw-ico-l { color:#8A5F07; }
 .theme-sw i { width:20px; height:20px; z-index:1; }
 .theme-sw.sw[aria-checked="true"] i { transform: translateX(26px); }
 
@@ -312,7 +313,8 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .mobile-bar { display:none; }
 
 /* --- link rows --- */
-.lrow { background:var(--w); border:1px solid var(--line); border-radius:var(--r-l); padding:14px 14px 14px 8px; display:flex; gap:10px; align-items:center; transition: box-shadow .18s ease, border-color .18s ease, opacity .18s; }
+.lrow { background:var(--w); border:1px solid var(--line); border-radius:var(--r-l); padding:14px 14px 14px 8px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; transition: box-shadow .18s ease, border-color .18s ease, opacity .18s; }
+.lrow-actions { display:flex; align-items:center; gap:8px; flex:none; margin-left:auto; }
 .lrow:hover { box-shadow: var(--sh-2); }
 .lrow.drag { opacity:.4; }
 .lrow.over { border-color: var(--p); box-shadow: 0 0 0 3px rgba(17,17,17,.14); }
@@ -408,6 +410,7 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
   .th-grid { grid-template-columns:1fr 1fr; }
   .pick { grid-template-columns:1fr; }
   .toasts { left:14px; right:14px; bottom:14px; width:auto; }
+  .lrow-actions { width:100%; justify-content:flex-end; margin-left:0; padding-left:32px; }
 }
 @media (max-width: 380px) {
   .pch { font-size:15.5px; }
@@ -2500,17 +2503,19 @@ function LinksPage() {
                   </div>
                 </div>
 
-                <button
-                  className="sw"
-                  role="switch"
-                  aria-checked={l.active !== false}
-                  aria-label={`${l.active === false ? "Show" : "Hide"} ${l.title}`}
-                  onClick={() => toggle(l)}
-                >
-                  <i />
-                </button>
-                <button className="icobtn" onClick={() => { setDraft({ id: l.id, title: l.title, url: l.url || "", icon: l.icon || "", badge: l.badge || "", type: l.type || "link" }); setErrs({}); }} aria-label={`Edit ${l.title}`}>{I.pencil}</button>
-                <button className="icobtn danger" onClick={() => setConfirmDel(l)} aria-label={`Delete ${l.title}`}>{I.trash}</button>
+                <div className="lrow-actions">
+                  <button
+                    className="sw"
+                    role="switch"
+                    aria-checked={l.active !== false}
+                    aria-label={`${l.active === false ? "Show" : "Hide"} ${l.title}`}
+                    onClick={() => toggle(l)}
+                  >
+                    <i />
+                  </button>
+                  <button className="icobtn" onClick={() => { setDraft({ id: l.id, title: l.title, url: l.url || "", icon: l.icon || "", badge: l.badge || "", type: l.type || "link" }); setErrs({}); }} aria-label={`Edit ${l.title}`}>{I.pencil}</button>
+                  <button className="icobtn danger" onClick={() => setConfirmDel(l)} aria-label={`Delete ${l.title}`}>{I.trash}</button>
+                </div>
               </div>
             ))
           )}
