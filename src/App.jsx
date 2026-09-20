@@ -300,14 +300,14 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .pick-i[aria-pressed="true"] { border-color:var(--p); background:var(--tint); }
 
 /* --- dashboard shell --- */
-.dash { display:grid; grid-template-columns: 244px 1fr; min-height:100vh; }
+.dash { display:grid; grid-template-columns: 244px 1fr; min-height:100vh; overflow-x:hidden; }
 .side { border-right:1px solid var(--line); background:var(--w); padding:18px 14px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; }
 .side-l { display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border-radius:12px; background:none; border:0; cursor:pointer; color:var(--mut); font-weight:600; font-size:14.5px; text-align:left; }
 .side-l:hover { background:var(--tint); color:var(--ink); }
 .side-l[aria-current="page"] { background:var(--tint-2); color:var(--p-700); }
-.dash-main { min-width:0; display:flex; flex-direction:column; }
+.dash-main { min-width:0; display:flex; flex-direction:column; overflow-x:hidden; max-width:100vw; }
 .dash-top { border-bottom:1px solid var(--line); background:var(--w); background:color-mix(in srgb, var(--w) 85%, transparent); backdrop-filter:blur(10px); position:sticky; top:0; z-index:30; padding:12px 24px; }
-.dash-body { padding:26px 24px 80px; flex:1; }
+.dash-body { padding:26px 24px 80px; flex:1; min-width:0; overflow-x:hidden; }
 .dash-split { display:grid; grid-template-columns: minmax(0,1fr) 336px; gap:26px; align-items:start; }
 .dash-prev { position:sticky; top:86px; }
 .h-page { font-size:24px; }
@@ -1373,7 +1373,7 @@ const FEATURES = [
   { icon: I.sparkle, t: "A profile that sounds like you", d: "Photo, name, bio and social icons — edited live, saved the moment you hit save." },
   { icon: I.layers, t: "Unlimited links", d: "Websites, shops, videos, playlists, PDFs. Reorder them by dragging." },
   { icon: I.chart, t: "Clicks you can read", d: "See views, clicks and which links people actually tap, day by day." },
-  { icon: I.palette, t: "Themes worth sharing", d: "Six themes, three button shapes, three typefaces. Preview before you publish." },
+  { icon: I.palette, t: "Themes worth sharing", d: "Seven themes, four button shapes, eight typefaces. Preview before you publish." },
   { icon: I.share, t: "One URL, everywhere", d: "Drop it in Instagram, TikTok, YouTube, X or your email signature." },
 ];
 
@@ -2493,7 +2493,7 @@ function LinksPage() {
 
                   <div className="grow" style={{ minWidth: 0 }}>
                     <div className="row" style={{ gap: 8 }}>
-                      {l.icon && <span style={{ color: "var(--p)", display: "flex" }}><SocialIcon name={l.icon} size={17} /></span>}
+                      {l.icon && <span style={{ color: "var(--ink)", display: "flex" }}><SocialIcon name={l.icon} size={17} /></span>}
                       <span className="trunc" style={{ fontWeight: 600 }}>{l.title}</span>
                       {l.type === "header" && <span className="pill pill-n">Header</span>}
                       {l.badge && <span className="pill pill-w">{l.badge}</span>}
@@ -2947,7 +2947,7 @@ function Appearance() {
               )}
               {(p.socials || []).map((s) => (
                 <div key={s.platform} className="row" style={{ border: "1px solid var(--line)", borderRadius: 13, padding: "10px 12px" }}>
-                  <span style={{ color: "var(--p)", display: "flex" }}><SocialIcon name={s.platform} size={18} /></span>
+                  <span style={{ color: "var(--ink)", display: "flex" }}><SocialIcon name={s.platform} size={18} /></span>
                   <div className="grow" style={{ minWidth: 0 }}>
                     <div className="sm" style={{ fontWeight: 600 }}>{SOCIALS[s.platform].label}</div>
                     <div className="mut tiny trunc">{prettyUrl(s.url)}</div>
@@ -2968,7 +2968,7 @@ function Appearance() {
                 <input
                   className="inp"
                   style={{ flex: 1, minWidth: 150 }}
-                  placeholder={socialDraft.platform === "email" ? "you@example.com" : socialDraft.platform === "whatsapp" ? "+1 555 123 4567" : "yourhandle"}
+                  placeholder={socialDraft.platform === "email" ? "you@example.com" : socialDraft.platform === "whatsapp" ? "+1 555 123 4567" : "your URL"}
                   inputMode={socialDraft.platform === "whatsapp" ? "tel" : undefined}
                   value={socialDraft.handle}
                   onChange={(e) => setSocialDraft((d) => ({ ...d, handle: e.target.value }))}
