@@ -3521,17 +3521,19 @@ function PublicProfile({ username, go }) {
           >
             {I.logo(15)} Create your own Tap-it page
           </button>
-          <div style={{ marginTop: 14 }}>
-            <button
-              onClick={async () => {
-                try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/#/${rec.account.username}`); toast("Link copied."); }
-                catch { toast("Copy didn't work in this browser.", "bad"); }
-              }}
-              style={{ background: "none", border: 0, color: theme.text, opacity: 0.6, fontSize: 12.5, cursor: "pointer" }}
-            >
-              Copy this page's link
-            </button>
-          </div>
+          {isOwner && (
+            <div style={{ marginTop: 14 }}>
+              <button
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(`https://tap-it-nu.vercel.app/#/${rec.account.username}`); toast("Link copied."); }
+                  catch { toast("Copy didn't work in this browser.", "bad"); }
+                }}
+                style={{ background: "none", border: 0, color: theme.text, opacity: 0.6, fontSize: 12.5, cursor: "pointer" }}
+              >
+                Copy this page's link
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
