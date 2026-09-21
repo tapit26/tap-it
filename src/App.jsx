@@ -1454,8 +1454,8 @@ function Landing({ go, user }) {
                   <p>{s.d}</p>
                   {s.videoId && (
                     <button
-                      className="btn btn-g btn-sm"
-                      style={{ marginTop: 14 }}
+                      className="btn btn-g btn-sm hide-sm"
+                      style={{ marginTop: 28 }}
                       onClick={() => setHelpVideo(true)}
                     >
                       Need help? Watch this video
@@ -1464,6 +1464,13 @@ function Landing({ go, user }) {
                 </div>
               ))}
             </div>
+            <button
+              className="btn btn-g btn-sm only-sm"
+              style={{ marginTop: 20 }}
+              onClick={() => setHelpVideo(true)}
+            >
+              Need help? Watch this video
+            </button>
           </div>
         </section>
 
