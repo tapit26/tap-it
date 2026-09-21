@@ -1381,7 +1381,7 @@ const FEATURES = [
 
 const STEPS = [
   { n: "01", t: "Sign up", d: "Create your account and choose your unique username." },
-  { n: "02", t: "Add your links", d: "Add social profiles, websites, products, videos, and anything else you want people to discover." },
+  { n: "02", t: "Add your links", d: "Add social profiles, websites, products, videos, and anything else you want people to discover.", videoId: "z9DK_ovdYP8" },
   { n: "03", t: "Share your profile", d: "Put your unique URL in your Instagram, TikTok, YouTube, X, email signature, or anywhere else." },
 ];
 
@@ -1392,6 +1392,7 @@ const TESTIMONIALS = [
 ];
 
 function Landing({ go, user }) {
+  const [helpVideo, setHelpVideo] = useState(false);
   return (
     <>
       <Nav go={go} user={user} />
@@ -1451,6 +1452,15 @@ function Landing({ go, user }) {
                   <div className="step-n">{s.n}</div>
                   <h3>{s.t}</h3>
                   <p>{s.d}</p>
+                  {s.videoId && (
+                    <button
+                      className="btn btn-g btn-sm"
+                      style={{ marginTop: 14 }}
+                      onClick={() => setHelpVideo(true)}
+                    >
+                      Need help? Watch this video
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1470,6 +1480,17 @@ function Landing({ go, user }) {
         </section>
       </main>
       <Footer go={go} />
+      <Modal open={helpVideo} onClose={() => setHelpVideo(false)} title="Add your links">
+        <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 12, overflow: "hidden", marginBottom: 22 }}>
+          <iframe
+            src={helpVideo ? "https://www.youtube.com/embed/z9DK_ovdYP8?autoplay=1&vq=hd1080" : ""}
+            title="Need help? Watch this video"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </Modal>
     </>
   );
 }
