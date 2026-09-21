@@ -1455,7 +1455,7 @@ function Landing({ go, user }) {
                   {s.videoId && (
                     <button
                       className="btn btn-g btn-sm hide-sm"
-                      style={{ marginTop: 28 }}
+                      style={{ marginTop: 44 }}
                       onClick={() => setHelpVideo(true)}
                     >
                       Need help? Watch this video
@@ -1487,7 +1487,7 @@ function Landing({ go, user }) {
         </section>
       </main>
       <Footer go={go} />
-      <Modal open={helpVideo} onClose={() => setHelpVideo(false)} title="Add your links">
+      <Modal open={helpVideo} onClose={() => setHelpVideo(false)} title="">
         <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 12, overflow: "hidden", marginBottom: 22 }}>
           <iframe
             src={helpVideo ? "https://www.youtube.com/embed/z9DK_ovdYP8?autoplay=1&vq=hd1080" : ""}
