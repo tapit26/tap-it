@@ -1452,25 +1452,18 @@ function Landing({ go, user }) {
                   <div className="step-n">{s.n}</div>
                   <h3>{s.t}</h3>
                   <p>{s.d}</p>
-                  {s.videoId && (
-                    <button
-                      className="btn btn-g btn-sm hide-sm"
-                      style={{ marginTop: 44 }}
-                      onClick={() => setHelpVideo(true)}
-                    >
-                      Need help? Watch this video
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
-            <button
-              className="btn btn-g btn-sm only-sm"
-              style={{ marginTop: 20 }}
-              onClick={() => setHelpVideo(true)}
-            >
-              Need help? Watch this video
-            </button>
+            <div style={{ textAlign: "center" }}>
+              <button
+                className="btn btn-g btn-sm"
+                style={{ marginTop: 36 }}
+                onClick={() => setHelpVideo(true)}
+              >
+                Need help? Watch this video
+              </button>
+            </div>
           </div>
         </section>
 
