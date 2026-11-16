@@ -2281,6 +2281,7 @@ function PreviewPane({ user, title = "Live preview" }) {
 function Overview({ go }) {
   const { user } = useAuth();
   const toast = useToast();
+  const [setupVideo, setSetupVideo] = useState(false);
   const a = useMemo(() => summarize(user.analytics, user.links, 7), [user.analytics, user.links]);
   const active = user.links.filter((l) => l.active !== false && l.type !== "header").length;
 
@@ -2291,6 +2292,9 @@ function Overview({ go }) {
         <p className="mut sm" style={{ marginTop: 6 }}>
           {active === 0 ? "Your page is live but empty. Add your first link to give people somewhere to go." : `${active} live link${active === 1 ? "" : "s"} on your page right now.`}
         </p>
+        <Button className="only-sm" style={{ marginTop: 14, width: "100%" }} onClick={() => setSetupVideo(true)}>
+          Continue setup: watch this video
+        </Button>
       </div>
 
       <div className="kpis">
@@ -2344,10 +2348,25 @@ function Overview({ go }) {
                 catch { toast("Copy didn't work in this browser.", "bad"); }
               }} />
             </div>
+            <Button className="hide-sm" style={{ marginTop: 16, width: "100%" }} onClick={() => setSetupVideo(true)}>
+              Continue setup: watch this video
+            </Button>
           </div>
         </div>
         <PreviewPane user={user} />
       </div>
+
+      <Modal open={setupVideo} onClose={() => setSetupVideo(false)} title="">
+        <div style={{ position: "relative", width: "100%", paddingTop: "56.25%", borderRadius: 12, overflow: "hidden", marginBottom: 22 }}>
+          <iframe
+            src={setupVideo ? "https://www.youtube.com/embed/z9DK_ovdYP8?autoplay=1&vq=hd1080" : ""}
+            title="Continue setup: watch this video"
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </Modal>
     </div>
   );
 }
