@@ -6,7 +6,11 @@ import React, {
   useCallback,
   createContext,
   useContext,
+  useLayoutEffect,
 } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Lenis from "lenis";
 
 /* ============================================================================
    TAP-IT — link-in-bio platform
@@ -23,6 +27,7 @@ import React, {
     10. Onboarding
     11. Dashboard (overview, links, appearance, analytics, settings)
     12. Public profile
+    13. Motion layer (GSAP + Lenis) — presentation only, see "MOTION LAYER"
 ============================================================================ */
 
 /* ---------------------------------------------------------------- 1. STYLE */
@@ -30,8 +35,8 @@ import React, {
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&family=Playfair+Display:wght@600;700&family=Oswald:wght@500;600;700&family=Caveat:wght@600;700&family=Space+Mono:wght@400;700&display=swap');
 
-html, body { margin:0; padding:0; overflow-x:hidden; max-width:100%; }
-#root { min-height:100vh; overflow-x:hidden; }
+html, body { margin:0; padding:0; overflow-x:hidden; overflow-x:clip; max-width:100%; }
+#root { min-height:100vh; overflow-x:hidden; overflow-x:clip; }
 
 .pch, .pch *, .pch *::before, .pch *::after { box-sizing: border-box; }
 .pch {
@@ -57,7 +62,7 @@ html, body { margin:0; padding:0; overflow-x:hidden; max-width:100%; }
 }
 html[data-theme="dark"], body[data-theme="dark"] { background:#121212; }
 html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
-.pch { min-height:100vh; width:100%; background:var(--bg); overflow-x:hidden; }
+.pch { min-height:100vh; width:100%; background:var(--bg); overflow-x:hidden; overflow-x:clip; }
 
 .pch[data-theme="dark"] {
   --p:#F2F2F2; --p-600:#FFFFFF; --p-700:#F2F2F2; --p2:#B5B5B5;
@@ -302,14 +307,14 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .pick-i[aria-pressed="true"] { border-color:var(--p); background:var(--tint); }
 
 /* --- dashboard shell --- */
-.dash { display:grid; grid-template-columns: 244px 1fr; min-height:100vh; overflow-x:hidden; }
+.dash { display:grid; grid-template-columns: 244px 1fr; min-height:100vh; overflow-x:hidden; overflow-x:clip; }
 .side { border-right:1px solid var(--line); background:var(--w); padding:18px 14px; position:sticky; top:0; height:100vh; display:flex; flex-direction:column; }
 .side-l { display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px; border-radius:12px; background:none; border:0; cursor:pointer; color:var(--mut); font-weight:600; font-size:14.5px; text-align:left; }
 .side-l:hover { background:var(--tint); color:var(--ink); }
 .side-l[aria-current="page"] { background:var(--tint-2); color:var(--p-700); }
-.dash-main { min-width:0; display:flex; flex-direction:column; overflow-x:hidden; max-width:100vw; }
+.dash-main { min-width:0; display:flex; flex-direction:column; overflow-x:hidden; overflow-x:clip; max-width:100vw; }
 .dash-top { border-bottom:1px solid var(--line); background:var(--w); background:color-mix(in srgb, var(--w) 85%, transparent); backdrop-filter:blur(10px); position:sticky; top:0; z-index:30; padding:12px 24px; }
-.dash-body { padding:26px 24px 80px; flex:1; min-width:0; overflow-x:hidden; }
+.dash-body { padding:26px 24px 80px; flex:1; min-width:0; overflow-x:hidden; overflow-x:clip; }
 .dash-split { display:grid; grid-template-columns: minmax(0,1fr) 336px; gap:26px; align-items:start; }
 .dash-prev { position:sticky; top:86px; }
 .h-page { font-size:24px; }
@@ -427,6 +432,71 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
   .phone { width:100%; padding:9px; border-radius:36px; }
   .phone-scr { height:540px; border-radius:28px; }
 }
+/* --- motion layer (GSAP / Lenis) --- */
+html.lenis, html.lenis body { height:auto; }
+.lenis.lenis-smooth { scroll-behavior:auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior:contain; }
+.lenis.lenis-stopped { overflow:hidden; }
+.lenis.lenis-scrolling iframe { pointer-events:none; }
+html, body { transition: background-color .35s ease; }
+html { scrollbar-width:thin; }
+
+.pg-in { animation: pgIn .45s ease backwards; }
+@keyframes pgIn { from { opacity:0 } }
+.scroll-prog { position:fixed; top:0; left:0; right:0; height:2px; background:var(--p); transform-origin:0 50%; transform:scaleX(0); z-index:80; pointer-events:none; }
+
+/* theme switch: ease the big surfaces instead of snapping */
+.pch, .card, .side, .dash-top, .auth-card, .foot, .mdl, .theme-toggle { transition: background-color .35s ease, border-color .35s ease, color .35s ease, box-shadow .3s ease; }
+
+/* nav */
+.nav-in { transition: height .35s cubic-bezier(.2,.8,.3,1); }
+.nav.stuck .nav-in { height:60px; }
+.nav-lnk { transition: color .2s ease, background .2s ease; }
+.nav > .wrap.only-sm > .card { animation: pop .28s cubic-bezier(.2,.8,.3,1); }
+.logo { transition: transform .3s cubic-bezier(.2,.8,.3,1); }
+.logo:hover { transform: scale(1.04); }
+
+/* buttons: soft sheen on the primary */
+.btn { position:relative; overflow:hidden; isolation:isolate; }
+.btn-p::after { content:''; position:absolute; inset:0; pointer-events:none; background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%); transform:translateX(-120%); transition: transform .7s cubic-bezier(.2,.8,.3,1); }
+.btn-p:hover:not(:disabled)::after { transform:translateX(120%); }
+.pch[data-theme="dark"] .btn-p::after { background:linear-gradient(110deg, transparent 30%, rgba(0,0,0,.14) 50%, transparent 70%); }
+
+/* hero: cursor-reactive dot grid */
+.hero-dots { position:absolute; inset:0; pointer-events:none; opacity:.55;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--ink) 30%, transparent) 1px, transparent 1.4px);
+  background-size:26px 26px;
+  -webkit-mask-image: radial-gradient(300px circle at var(--mx, 72%) var(--my, 30%), #000, transparent 72%);
+  mask-image: radial-gradient(300px circle at var(--mx, 72%) var(--my, 30%), #000, transparent 72%); }
+.phone-stage { perspective:1000px; }
+
+/* feature cards: spotlight + lift */
+.f-card { position:relative; overflow:hidden; isolation:isolate; transition: border-color .3s ease, box-shadow .3s ease, transform .5s cubic-bezier(.2,.8,.3,1), background-color .35s ease; }
+.f-card::before { content:''; position:absolute; inset:0; z-index:-1; opacity:0; transition: opacity .35s ease; pointer-events:none;
+  background: radial-gradient(340px circle at var(--sx, 50%) var(--sy, 50%), color-mix(in srgb, var(--ink) 8%, transparent), transparent 65%); }
+.f-card:hover { transform: translateY(-4px); }
+.f-card:hover::before { opacity:1; }
+.f-ico { transition: transform .45s cubic-bezier(.2,.8,.3,1), background .3s ease, color .3s ease; }
+.f-card:hover .f-ico { transform: scale(1.08) rotate(-4deg); background:var(--p); color:var(--w); }
+
+/* steps: the top rule draws in */
+.step::before { transform-origin:0 50%; transform: scaleX(var(--bar, 1)); }
+
+/* closing band: slow light sweep */
+.cta-band { position:relative; overflow:hidden; isolation:isolate; }
+.cta-band::before { content:''; position:absolute; inset:-60%; z-index:-1; pointer-events:none;
+  background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, color-mix(in srgb, var(--ink) 7%, transparent) 70deg, transparent 150deg);
+  animation: spinSlow 22s linear infinite; }
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+
+/* dashboard polish */
+.side-l, .mobile-bar button { transition: background .2s ease, color .2s ease; }
+.kpi { transition: transform .4s cubic-bezier(.2,.8,.3,1), box-shadow .3s ease, border-color .3s ease, background-color .35s ease; }
+.kpi:hover { transform: translateY(-3px); box-shadow: var(--sh-2); }
+.theme-toggle { transition: transform .25s cubic-bezier(.2,.8,.3,1), background-color .35s ease, border-color .35s ease, color .35s ease, box-shadow .3s ease; }
+.theme-toggle svg { transition: transform .5s cubic-bezier(.2,.8,.3,1); }
+.theme-toggle:hover svg { transform: rotate(25deg); }
+.theme-toggle:active { transform: scale(.92); }
 @media (prefers-reduced-motion: reduce) {
   .pch *, .pch *::before, .pch *::after {
     animation-duration:.01ms !important; animation-iteration-count:1 !important;
@@ -929,9 +999,15 @@ function Modal({ open, onClose, title, children, footer, labelledBy = "mdl-t" })
     }, 40);
     return () => { document.removeEventListener("keydown", onKey); clearTimeout(t); };
   }, [open]);
+  /* freeze the smooth-scroll while a dialog is open */
+  useEffect(() => {
+    if (!open) return;
+    lenisInstance?.stop();
+    return () => { lenisInstance?.start(); };
+  }, [open]);
   if (!open) return null;
   return (
-    <div className="ovl" onMouseDown={(e) => e.target === e.currentTarget && onCloseRef.current()}>
+    <div className="ovl" data-lenis-prevent onMouseDown={(e) => e.target === e.currentTarget && onCloseRef.current()}>
       <div className="mdl" role="dialog" aria-modal="true" aria-labelledby={labelledBy} ref={ref}>
         <div className="row-b" style={{ padding: "20px 22px 0" }}>
           <h3 id={labelledBy} style={{ fontSize: 19 }}>{title}</h3>
@@ -1149,14 +1225,28 @@ function saveContact(profile, username) {
 }
 
 /** The one component reused by the hero mockup, onboarding, dashboard preview and the public page. */
-function ProfileCanvas({ profile, links, interactive = false, onLinkClick, username, fillParentBg = false }) {
+function ProfileCanvas({ profile, links, interactive = false, onLinkClick, username, fillParentBg = false, animate = false }) {
+  const rootRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!animate || !el || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      if (el.querySelector(".pf-cover")) tl.from(".pf-cover", { autoAlpha: 0, scale: 1.04, duration: 0.9 }, 0);
+      tl.from(".pf-av", { autoAlpha: 0, scale: 0.6, duration: 0.9, ease: "back.out(1.6)" }, 0.05)
+        .from(".pf-name", { autoAlpha: 0, y: 14, duration: 0.7 }, 0.2)
+        .from(".pf-bio", { autoAlpha: 0, y: 12, duration: 0.7 }, 0.3);
+      if (el.querySelector(".pf-soc a")) tl.from(".pf-soc a", { autoAlpha: 0, y: 10, duration: 0.5, stagger: 0.05 }, 0.4);
+    }, el);
+    return () => ctx.revert();
+  }, [animate]);
   const theme = getTheme(profile);
   const appearance = { buttonStyle: profile.buttonStyle || "soft", radius: profile.radius || "round" };
   const font = FONTS.find((f) => f.id === (profile.font || "manrope"))?.stack || FONTS[0].stack;
   const live = links.filter((l) => l.active !== false);
 
   return (
-    <div className="pf" style={{ background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font, "--fs-scale": (profile.fontScale || 100) / 100 }}>
+    <div className="pf" ref={rootRef} data-lenis-prevent={interactive ? undefined : ""} style={{ background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font, "--fs-scale": (profile.fontScale || 100) / 100 }}>
       {profile.cover && (
         <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}`, filter: profile.coverBlur ? "blur(6px)" : "none" }} />
       )}
@@ -1272,9 +1362,281 @@ function useHashRoute() {
   return [route, go];
 }
 
+/* ------------------------------------------------------------ MOTION LAYER
+   GSAP + Lenis. Everything below is presentational: it wraps existing markup
+   and never touches data, routing or auth. All of it switches itself off for
+   visitors who prefer reduced motion. The text / hover pieces follow the
+   patterns from React Bits (Blur Text, Split Text, Magnet, Spotlight Card,
+   Count Up, Dot Grid) written directly against GSAP, so there is nothing
+   extra to install beyond `gsap` and `lenis`.
+--------------------------------------------------------------------------- */
+
+gsap.registerPlugin(ScrollTrigger);
+
+const prefersReduced = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const canHover = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(hover: hover) and (pointer: fine)").matches;
+
+let lenisInstance = null;
+
+/** Smooth-scroll to an element (or id). Falls back to the browser when Lenis is off. */
+function scrollToTarget(target, offset = -72) {
+  const el = typeof target === "string" ? document.getElementById(target) : target;
+  if (!el) return;
+  if (lenisInstance) lenisInstance.scrollTo(el, { offset, duration: 1.3 });
+  else el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function jumpTop() {
+  if (lenisInstance) lenisInstance.scrollTo(0, { immediate: true, force: true });
+  else window.scrollTo(0, 0);
+  requestAnimationFrame(() => ScrollTrigger.refresh());
+}
+
+/** One Lenis instance for the whole app, driven by GSAP's ticker so ScrollTrigger stays in sync. */
+function useSmoothScroll() {
+  useEffect(() => {
+    if (prefersReduced()) return;
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    lenisInstance = lenis;
+    lenis.on("scroll", ScrollTrigger.update);
+    const tick = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(0);
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener("load", refresh);
+    document.fonts?.ready?.then(refresh);
+    return () => {
+      window.removeEventListener("load", refresh);
+      gsap.ticker.remove(tick);
+      lenis.destroy();
+      lenisInstance = null;
+    };
+  }, []);
+}
+
+/** Word-by-word text reveal. mode "mask" = rises out of a clipped line (hero), "blur" = fades in sharp (headings). */
+function TextReveal({ as: Tag = "span", text, mode = "blur", onScroll = true, delay = 0, className, style }) {
+  const ref = useRef(null);
+  const words = useMemo(() => String(text).split(" "), [text]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      const targets = el.querySelectorAll("[data-w]");
+      const from = mode === "mask" ? { yPercent: 118 } : { autoAlpha: 0, y: 26, filter: "blur(12px)" };
+      const to = mode === "mask"
+        ? { yPercent: 0, duration: 1.1, ease: "expo.out", stagger: 0.075, delay }
+        : { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.95, ease: "power3.out", stagger: 0.06, delay, clearProps: "filter,transform" };
+      if (onScroll) to.scrollTrigger = { trigger: el, start: "top 88%", once: true };
+      gsap.fromTo(targets, from, to);
+    }, el);
+    return () => ctx.revert();
+  }, [text, mode, onScroll, delay]);
+  const mask = mode === "mask";
+  return (
+    <Tag ref={ref} className={className} style={style} aria-label={text}>
+      {words.map((w, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && " "}
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              verticalAlign: "top",
+              overflow: mask ? "hidden" : "visible",
+              paddingBottom: mask ? ".14em" : 0,
+              marginBottom: mask ? "-.14em" : 0,
+            }}
+          >
+            <span data-w style={{ display: "inline-block" }}>{w}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </Tag>
+  );
+}
+
+/** Fade-and-rise on scroll. Pass `selector` to stagger children instead of the wrapper itself. */
+function Reveal({ as: Tag = "div", y = 28, scale, delay = 0, stagger = 0.08, selector, bar = false, start = "top 88%", children, ...rest }) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      const targets = selector ? el.querySelectorAll(selector) : el;
+      const from = { autoAlpha: 0, y };
+      const to = {
+        autoAlpha: 1, y: 0, duration: 1, ease: "power3.out", delay, stagger,
+        clearProps: "transform",
+        scrollTrigger: { trigger: el, start, once: true },
+      };
+      if (scale) { from.scale = scale; to.scale = 1; }
+      if (bar) { from["--bar"] = 0; to["--bar"] = 1; }
+      gsap.fromTo(targets, from, to);
+    }, el);
+    return () => ctx.revert();
+  }, []);
+  return <Tag ref={ref} {...rest}>{children}</Tag>;
+}
+
+/** Pulls its child gently toward the cursor. */
+function Magnet({ children, strength = 0.3, radius = 80, style }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReduced() || !canHover()) return;
+    const xTo = gsap.quickTo(el, "x", { duration: 0.7, ease: "elastic.out(1, 0.55)" });
+    const yTo = gsap.quickTo(el, "y", { duration: 0.7, ease: "elastic.out(1, 0.55)" });
+    const move = (e) => {
+      const r = el.getBoundingClientRect();
+      const dx = e.clientX - (r.left + r.width / 2);
+      const dy = e.clientY - (r.top + r.height / 2);
+      if (Math.hypot(dx, dy) < Math.max(r.width, r.height) / 2 + radius) { xTo(dx * strength); yTo(dy * strength); }
+      else { xTo(0); yTo(0); }
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    return () => { window.removeEventListener("pointermove", move); gsap.set(el, { clearProps: "transform" }); };
+  }, [strength, radius]);
+  return <div ref={ref} style={{ display: "inline-block", ...style }}>{children}</div>;
+}
+
+/** Numbers that count up (and from their previous value when the data refreshes). */
+function CountUp({ to, format = (n) => String(n), duration = 1.4 }) {
+  const ref = useRef(null);
+  const prev = useRef(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (prefersReduced() || typeof to !== "number" || !isFinite(to)) {
+      el.textContent = format(to);
+      prev.current = to;
+      return;
+    }
+    const o = { v: prev.current };
+    el.textContent = format(Math.round(o.v));
+    const tw = gsap.to(o, {
+      v: to, duration, ease: "power3.out",
+      onUpdate: () => { el.textContent = format(Math.round(o.v)); },
+      onComplete: () => { el.textContent = format(to); prev.current = to; },
+    });
+    return () => { tw.kill(); prev.current = o.v; };
+  }, [to]);
+  return <span ref={ref} />;
+}
+
+/** Thin reading-progress line along the top of the landing page. */
+function ScrollProgress() {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      gsap.to(el, { scaleX: 1, ease: "none", scrollTrigger: { start: 0, end: "max", scrub: 0.3 } });
+    });
+    return () => ctx.revert();
+  }, []);
+  return <div className="scroll-prog" ref={ref} aria-hidden="true" />;
+}
+
+/** Cursor spotlight for the feature cards (one delegated handler on the grid). */
+function spotlightMove(e) {
+  const card = e.target.closest?.(".f-card");
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  card.style.setProperty("--sx", e.clientX - r.left + "px");
+  card.style.setProperty("--sy", e.clientY - r.top + "px");
+}
+
+/** Hero choreography: staggered entrance, scroll parallax, cursor dot-grid, phone tilt. */
+function useHeroMotion() {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const root = ref.current;
+    if (!root || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from(".pill", { autoAlpha: 0, y: 14, duration: 0.7 }, 0)
+        .from(".lede", { autoAlpha: 0, y: 22, duration: 0.9 }, 0.55)
+        .from(".hero-cta .btn", { autoAlpha: 0, y: 20, duration: 0.8, stagger: 0.1, clearProps: "transform,opacity,visibility" }, 0.7)
+        .from(".hero-note", { autoAlpha: 0, y: 12, duration: 0.7 }, 0.95)
+        .from(".phone-stage", { autoAlpha: 0, y: 70, scale: 0.94, duration: 1.4, ease: "expo.out" }, 0.25)
+        .from(".chip-float", { autoAlpha: 0, scale: 0.7, y: 10, duration: 0.7, ease: "back.out(1.8)", stagger: 0.14 }, 1.15);
+      gsap.to(".phone-stage", { yPercent: -6, ease: "none", scrollTrigger: { trigger: root, start: "top top", end: "bottom top", scrub: 0.6 } });
+      gsap.to(".hero-glow", { yPercent: 28, ease: "none", scrollTrigger: { trigger: root, start: "top top", end: "bottom top", scrub: 0.6 } });
+    }, root);
+
+    let cleanup = () => {};
+    if (canHover()) {
+      const phone = root.querySelector(".phone");
+      const pos = { x: 0, y: 0 };
+      const apply = () => {
+        root.style.setProperty("--mx", pos.x + "px");
+        root.style.setProperty("--my", pos.y + "px");
+      };
+      const qx = gsap.quickTo(pos, "x", { duration: 0.7, ease: "power3.out", onUpdate: apply });
+      const qy = gsap.quickTo(pos, "y", { duration: 0.7, ease: "power3.out", onUpdate: apply });
+      let rx, ry;
+      if (phone) {
+        gsap.set(phone, { transformPerspective: 1000 });
+        rx = gsap.quickTo(phone, "rotationX", { duration: 0.9, ease: "power3.out" });
+        ry = gsap.quickTo(phone, "rotationY", { duration: 0.9, ease: "power3.out" });
+      }
+      const onMove = (e) => {
+        const r = root.getBoundingClientRect();
+        const px = e.clientX - r.left, py = e.clientY - r.top;
+        qx(px); qy(py);
+        if (phone) { ry((px / r.width - 0.5) * 10); rx(-(py / r.height - 0.5) * 8); }
+      };
+      const onLeave = () => { if (phone) { rx(0); ry(0); } };
+      root.addEventListener("pointermove", onMove, { passive: true });
+      root.addEventListener("pointerleave", onLeave);
+      cleanup = () => {
+        root.removeEventListener("pointermove", onMove);
+        root.removeEventListener("pointerleave", onLeave);
+        if (phone) gsap.set(phone, { clearProps: "transform" });
+      };
+    }
+    return () => { cleanup(); ctx.revert(); };
+  }, []);
+  return ref;
+}
+
+/** Staggers the top-level blocks of a dashboard page in whenever the section changes. */
+function useSectionMotion(key) {
+  const ref = useRef(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReduced()) return;
+    let kids = Array.from(el.children);
+    if (kids.length === 1) kids = Array.from(kids[0].children);
+    if (!kids.length) return;
+    const tw = gsap.fromTo(
+      kids,
+      { autoAlpha: 0, y: 18 },
+      { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: { amount: Math.min(0.5, kids.length * 0.06) }, clearProps: "opacity,visibility,transform" }
+    );
+    return () => { tw.revert(); };
+  }, [key]);
+  return ref;
+}
+
 /* ------------------------------------------------------- 8. MARKETING PAGE */
 
 function Nav({ go, user }) {
+  const navRef = useRef(null);
+  useLayoutEffect(() => {
+    if (!navRef.current || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      gsap.from(navRef.current, { yPercent: -100, autoAlpha: 0, duration: 0.9, ease: "power3.out", delay: 0.05, clearProps: "transform,opacity,visibility" });
+    });
+    return () => ctx.revert();
+  }, []);
   const [stuck, setStuck] = useState(false);
   const [open, setOpen] = useState(false);
   useEffect(() => {
@@ -1284,10 +1646,10 @@ function Nav({ go, user }) {
   }, []);
   const jump = (id) => {
     setOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToTarget(id);
   };
   return (
-    <header className={"nav" + (stuck ? " stuck" : "")}>
+    <header className={"nav" + (stuck ? " stuck" : "")} ref={navRef}>
       <div className="wrap nav-in">
         <Logo onClick={() => go("/")} />
         <nav className="row hide-sm" style={{ marginLeft: 18, gap: 2 }} aria-label="Main">
@@ -1398,25 +1760,32 @@ const TESTIMONIALS = [
 
 function Landing({ go, user }) {
   const [helpVideo, setHelpVideo] = useState(false);
+  const heroRef = useHeroMotion();
   return (
     <>
+      <ScrollProgress />
       <Nav go={go} user={user} />
       <main>
-        <section className="hero">
+        <section className="hero" ref={heroRef}>
           <div className="hero-glow" />
+          <div className="hero-dots" aria-hidden="true" />
           <div className="wrap hero-grid">
             <div>
               <span className="pill pill-n">Free to start — no card needed</span>
-              <h1 className="h1" style={{ marginTop: 18 }}>One link. Everything you are.</h1>
+              <TextReveal as="h1" mode="mask" onScroll={false} delay={0.15} className="h1" style={{ marginTop: 18 }} text="One link. Everything you are." />
               <p className="lede">
                 Create a beautiful home for everything you create, share, and recommend. Bring your audience to one
                 simple, customizable page.
               </p>
               <div className="hero-cta">
-                <Button size="lg" onClick={() => go("/signup")}>Get started — it's free</Button>
-                <Button variant="g" size="lg" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>
-                  See how it works
-                </Button>
+                <Magnet>
+                  <Button size="lg" onClick={() => go("/signup")}>Get started — it's free</Button>
+                </Magnet>
+                <Magnet>
+                  <Button variant="g" size="lg" onClick={() => scrollToTarget("how")}>
+                    See how it works
+                  </Button>
+                </Magnet>
               </div>
               <p className="hero-note">
                 <span style={{ color: "var(--ok)", display: "flex" }}>{I.check}</span>
@@ -1430,10 +1799,10 @@ function Landing({ go, user }) {
         <section className="sec" id="features">
           <div className="wrap">
             <div className="sec-h">
-              <h2>Everything you need to be findable</h2>
-              <p>A page, the links on it, and the numbers that tell you what's working.</p>
+              <TextReveal as="h2" text="Everything you need to be findable" />
+              <Reveal as="p" delay={0.15} y={18}>A page, the links on it, and the numbers that tell you what's working.</Reveal>
             </div>
-            <div className="f-grid">
+            <Reveal className="f-grid" selector=".f-card" stagger={0.09} onPointerMove={spotlightMove}>
               {FEATURES.map((f) => (
                 <div className="f-card" key={f.t}>
                   <div className="f-ico">{f.icon}</div>
@@ -1441,17 +1810,17 @@ function Landing({ go, user }) {
                   <p>{f.d}</p>
                 </div>
               ))}
-            </div>
+            </Reveal>
           </div>
         </section>
 
         <section className="sec" id="how" style={{ paddingTop: 0 }}>
           <div className="wrap">
             <div className="sec-h">
-              <h2>Three steps to a live page</h2>
-              <p>Most people finish before their coffee goes cold.</p>
+              <TextReveal as="h2" text="Three steps to a live page" />
+              <Reveal as="p" delay={0.15} y={18}>Most people finish before their coffee goes cold.</Reveal>
             </div>
-            <div className="steps">
+            <Reveal className="steps" selector=".step" stagger={0.16} bar>
               {STEPS.map((s) => (
                 <div className="step" key={s.n}>
                   <div className="step-n">{s.n}</div>
@@ -1459,7 +1828,7 @@ function Landing({ go, user }) {
                   <p>{s.d}</p>
                 </div>
               ))}
-            </div>
+            </Reveal>
             <div style={{ textAlign: "center" }}>
               <button
                 className="btn btn-g btn-sm"
@@ -1474,13 +1843,15 @@ function Landing({ go, user }) {
 
         <section className="sec">
           <div className="wrap">
-            <div className="cta-band">
-              <h2>Your audience is waiting.</h2>
+            <Reveal className="cta-band" y={40} scale={0.96}>
+              <TextReveal as="h2" text="Your audience is waiting." />
               <p>Create your page in minutes and give everyone one place to find you.</p>
               <div style={{ marginTop: 26 }}>
-                <Button size="lg" onClick={() => go("/signup")}>Create your page</Button>
+                <Magnet>
+                  <Button size="lg" onClick={() => go("/signup")}>Create your page</Button>
+                </Magnet>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
       </main>
@@ -1504,7 +1875,7 @@ function Footer({ go }) {
   const toast = useToast();
   const soon = (n) => toast(`${n} isn't part of this prototype yet.`, "bad");
   return (
-    <footer className="foot">
+    <Reveal as="footer" className="foot" y={24} start="top 96%">
       <div className="wrap" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
         <Logo onClick={() => go("/")} />
         <p className="mut sm" style={{ marginTop: 12, maxWidth: "32ch" }}>
@@ -1514,19 +1885,32 @@ function Footer({ go }) {
       <div className="wrap mut tiny" style={{ marginTop: 34, textAlign: "center" }}>
         © {new Date().getFullYear()} Tap-it.
       </div>
-    </footer>
+    </Reveal>
   );
 }
 
 /* ------------------------------------------------------------ 9. AUTH PAGES */
 
 function AuthShell({ go, children, footer }) {
+  const cardRef = useRef(null);
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el || prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      gsap.from(el, { autoAlpha: 0, y: 30, scale: 0.97, duration: 0.9, ease: "expo.out", clearProps: "transform,opacity,visibility" });
+      gsap.from(el.querySelectorAll("h1, .fld, .btn, .divider"), {
+        autoAlpha: 0, y: 14, duration: 0.6, ease: "power3.out", stagger: 0.05, delay: 0.2,
+        clearProps: "transform,opacity,visibility",
+      });
+    }, el);
+    return () => ctx.revert();
+  }, []);
   return (
     <div className="auth-page">
       <div style={{ marginBottom: 22 }}>
         <Logo onClick={() => go("/")} size={28} />
       </div>
-      <div className="auth-card">{children}</div>
+      <div className="auth-card" ref={cardRef}>{children}</div>
       {footer && <div className="mut sm" style={{ marginTop: 20, textAlign: "center" }}>{footer}</div>}
     </div>
   );
@@ -1862,6 +2246,13 @@ function Onboarding({ go }) {
   const { user, patchUser } = useAuth();
   const toast = useToast();
   const [step, setStep] = useState(0);
+  useLayoutEffect(() => {
+    if (prefersReduced()) return;
+    const ctx = gsap.context(() => {
+      gsap.from(".ob-anim", { autoAlpha: 0, y: 18, duration: 0.6, ease: "power3.out", stagger: 0.07, clearProps: "transform,opacity,visibility" });
+    });
+    return () => ctx.revert();
+  }, [step]);
   const [displayName, setDisplayName] = useState(user.profile.displayName || "");
   const [bio, setBio] = useState(user.profile.bio || "");
   const [avatar, setAvatar] = useState(user.profile.avatar || null);
@@ -1991,9 +2382,9 @@ function Onboarding({ go }) {
         </div>
         <div style={{ maxWidth: 520, margin: "0 auto" }}>
           <div className="ob-bar" aria-hidden="true"><i style={{ width: `${((step + 1) / 3) * 100}%` }} /></div>
-          <h1 style={{ fontSize: 28, marginTop: 26 }}>{cur.title}</h1>
-          <p className="mut sm" style={{ marginTop: 8 }}>{cur.sub}</p>
-          <div style={{ marginTop: 26 }}>{cur.body}</div>
+          <h1 className="ob-anim" style={{ fontSize: 28, marginTop: 26 }}>{cur.title}</h1>
+          <p className="mut sm ob-anim" style={{ marginTop: 8 }}>{cur.sub}</p>
+          <div className="ob-anim" style={{ marginTop: 26 }}>{cur.body}</div>
 
           <div className="ob-inline" style={{ marginTop: 28 }}>
             <Phone>
@@ -2181,6 +2572,7 @@ function DashboardShell({ go, route, children }) {
   const toast = useToast();
   const section = route.path.replace(/^\/dashboard\/?/, "");
   const publicUrl = `tap-it-nu.vercel.app/#/${user.account.username}`;
+  const secRef = useSectionMotion(section);
 
   const copyLink = async () => {
     try {
@@ -2248,7 +2640,7 @@ function DashboardShell({ go, route, children }) {
             <Avatar src={user.profile.avatar} name={user.profile.displayName} size={34} />
           </div>
         </div>
-        <div className="dash-body">{children}</div>
+        <div className="dash-body"><div className="dash-sec" key={section} ref={secRef}>{children}</div></div>
         <nav className="mobile-bar" aria-label="Sections">
           {NAV_ITEMS.map((n) => (
             <button
@@ -2378,7 +2770,17 @@ function Kpi({ label, value, sub }) {
   return (
     <div className="kpi">
       <div className="mut tiny">{label}</div>
-      <div className="kpi-v">{typeof value === "number" ? fmt(value) : value}</div>
+      <div className="kpi-v">
+        {typeof value === "number" ? (
+          <CountUp to={value} format={fmt} />
+        ) : /^\d+%$/.test(String(value)) ? (
+          <CountUp to={parseInt(value, 10)} format={(n) => n + "%"} />
+        ) : /^\d+$/.test(String(value)) ? (
+          <CountUp to={parseInt(value, 10)} format={String} />
+        ) : (
+          value
+        )}
+      </div>
       <div className="mut tiny" style={{ marginTop: 2 }}>{sub}</div>
     </div>
   );
@@ -3559,7 +3961,7 @@ function PublicProfile({ username, go }) {
         </div>
       )}
       <div style={{ maxWidth: 520, margin: "0 auto", minHeight: "100vh" }}>
-        <ProfileCanvas profile={rec.profile} links={rec.links} interactive onLinkClick={onLinkClick} username={rec.account.username} fillParentBg />
+        <ProfileCanvas profile={rec.profile} links={rec.links} interactive onLinkClick={onLinkClick} username={rec.account.username} fillParentBg animate />
         <div style={{ textAlign: "center", padding: "10px 20px 42px" }}>
           <button
             onClick={() => go("/signup")}
@@ -3590,6 +3992,8 @@ function PublicProfile({ username, go }) {
 
 export default function App() {
   const [route, go] = useHashRoute();
+  useSmoothScroll();
+  useEffect(() => { jumpTop(); }, [route.path]);
   const [toasts, setToasts] = useState([]);
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
@@ -3850,7 +4254,7 @@ export default function App() {
       <ToastCtx.Provider value={toast}>
         <ThemeCtx.Provider value={{ theme, toggleTheme }}>
           <AuthCtx.Provider value={auth}>
-            {view}
+            <div className="pg-in" key={booting ? "boot" : isDash ? "dash" : path}>{view}</div>
             {!isPublicProfile && !isDash && (
               <button
                 className="theme-toggle"
