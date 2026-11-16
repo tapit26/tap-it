@@ -76,7 +76,7 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .pch[data-theme="dark"] .pill-bad { color: var(--bad); }
 .pch[data-theme="dark"] img { filter: brightness(.95); }
 
-.theme-sw { width:52px; height:26px; }
+.sw.theme-sw { width:52px; height:26px; }
 .theme-sw .sw-ico { position:absolute; top:50%; transform:translateY(-50%); width:14px; height:14px; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .theme-sw .sw-ico svg { width:12px; height:12px; }
 .theme-sw .sw-ico { z-index:2; }
@@ -84,7 +84,7 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .theme-sw .sw-ico-r { right:6px; color:#F2F2F2; display:none; }
 .theme-sw.sw[aria-checked="true"] .sw-ico-l { display:none; }
 .theme-sw.sw[aria-checked="true"] .sw-ico-r { display:flex; }
-.theme-sw i { width:20px; height:20px; z-index:1; }
+.sw.theme-sw i { width:20px; height:20px; z-index:1; }
 .theme-sw.sw[aria-checked="true"] i { transform: translateX(26px); }
 
 .theme-toggle {
