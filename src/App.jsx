@@ -60,7 +60,7 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .pch { min-height:100vh; width:100%; background:var(--bg); overflow-x:hidden; }
 
 .pch[data-theme="dark"] {
-  --p-700:#F2F2F2;
+  --p:#F2F2F2; --p-600:#FFFFFF; --p-700:#F2F2F2; --p2:#B5B5B5;
   --bg:#121212; --ink:#F2F2F2; --mut:#9C9C9C; --w:#1C1C1C;
   --line:#2D2D2D; --line-2:#252525; --tint:#1F1F1F; --tint-2:#282828;
   --ok:#34D399; --ok-bg:#12301F; --warn:#FBBF24; --warn-bg:#332810;
@@ -70,6 +70,8 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
   --sh-2: 0 8px 24px -12px rgba(0,0,0,.7);
   --sh-3: 0 28px 70px -28px rgba(0,0,0,.85);
 }
+.pch[data-theme="dark"] .btn-p, .pch[data-theme="dark"] .btn.btn-p { color:#111111; box-shadow: 0 6px 18px -8px rgba(255,255,255,.22); }
+.pch[data-theme="dark"] .sw[aria-checked="true"] i { background:#111111; }
 .pch[data-theme="dark"] .pill-ok { color: var(--ok); }
 .pch[data-theme="dark"] .pill-bad { color: var(--bad); }
 .pch[data-theme="dark"] img { filter: brightness(.95); }
