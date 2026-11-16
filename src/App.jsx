@@ -79,10 +79,11 @@ html[data-theme="light"], body[data-theme="light"] { background:#FAFAFA; }
 .theme-sw { width:52px; height:26px; }
 .theme-sw .sw-ico { position:absolute; top:50%; transform:translateY(-50%); width:14px; height:14px; display:flex; align-items:center; justify-content:center; pointer-events:none; }
 .theme-sw .sw-ico svg { width:12px; height:12px; }
+.theme-sw .sw-ico { z-index:2; }
 .theme-sw .sw-ico-l { left:6px; color:#C9890A; }
-.theme-sw .sw-ico-r { right:6px; color:#5A5A5A; }
-.theme-sw.sw[aria-checked="true"] .sw-ico-r { color:#F2F2F2; }
-.theme-sw.sw[aria-checked="true"] .sw-ico-l { color:#8A5F07; }
+.theme-sw .sw-ico-r { right:6px; color:#F2F2F2; display:none; }
+.theme-sw.sw[aria-checked="true"] .sw-ico-l { display:none; }
+.theme-sw.sw[aria-checked="true"] .sw-ico-r { display:flex; }
 .theme-sw i { width:20px; height:20px; z-index:1; }
 .theme-sw.sw[aria-checked="true"] i { transform: translateX(26px); }
 
