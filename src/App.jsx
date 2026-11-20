@@ -277,6 +277,29 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .cta-band h2 { font-size: clamp(30px,4.4vw,46px); }
 .cta-band p { color:var(--mut); margin:14px auto 0; max-width:44ch; font-size:16.5px; }
 
+/* --- pricing --- */
+.price-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:44px; max-width:900px; margin-left:auto; margin-right:auto; }
+.price-c { background:var(--w); border:1px solid var(--line); border-radius:var(--r-xl); padding:30px; display:flex; flex-direction:column; gap:18px; }
+.price-c h3 { font-size:20px; }
+.price-n { font-family:var(--disp); font-weight:800; font-size:42px; letter-spacing:-.04em; line-height:1; }
+.price-n span { font-family:var(--sans); font-weight:500; font-size:15px; letter-spacing:0; color:var(--mut); }
+.price-c ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px; font-size:14.5px; }
+.price-c li { display:flex; gap:9px; align-items:center; }
+.price-c li svg { flex:none; }
+.price-c > .btn, .price-c > form { margin-top:auto; }
+.bill-tog { display:inline-flex; background:var(--tint); border:1px solid var(--line); border-radius:999px; padding:3px; }
+.bill-tog button { border:0; background:none; padding:6px 13px; border-radius:999px; font-size:13px; font-weight:600; color:var(--mut); cursor:pointer; }
+.bill-tog button[aria-pressed="true"] { background:var(--p); color:var(--w); }
+.price-c-dark {background:linear-gradient(155deg,#1E1E1E 0%,#0A0A0A 70%); color:#fff; border-color:#0A0A0A; }
+.price-c-dark .price-n span { color:#ADADAD; }
+.tok-inp { flex:1; min-width:170px; background:transparent; color:#fff; border-color:rgba(255,255,255,.4); letter-spacing:.06em; }
+.tok-inp::placeholder { color:#8A8A8A; }
+.tok-inp:hover { border-color:rgba(255,255,255,.7); }
+.tok-inp:focus { border-color:#fff; box-shadow:0 0 0 3px rgba(255,255,255,.22); }
+.plan-ban { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--warn-bg); color:var(--ink); border:1px solid var(--line); border-radius:var(--r-m); padding:10px 14px; margin-bottom:20px; }
+.plan-ban.bad { background:var(--bad-bg); }
+@media (max-width: 720px) { .price-grid { grid-template-columns:1fr; } }
+
 /* --- footer --- */
 .foot { border-top:1px solid var(--line); padding:54px 0 34px; margin-top:10px; }
 .foot-grid { display:grid; grid-template-columns: 1.6fr repeat(3,1fr); gap:30px; }
@@ -615,6 +638,9 @@ function recFromRow(row, links, analytics, email) {
       onboarded: !!row.onboarded,
       deactivated: !!row.deactivated,
       google: false,
+      plan: row.plan || "trial",
+      trialEndsAt: row.trial_ends_at ? new Date(row.trial_ends_at).getTime() : null,
+      planExpiresAt: row.plan_expires_at ? new Date(row.plan_expires_at).getTime() : null,
     },
     profile: {
       displayName: row.display_name || "",
@@ -793,6 +819,44 @@ const db = {
       await supabase.from("links").update({ clicks: (link.clicks || 0) + 1 }).eq("id", linkId);
     }
   },
+};
+
+/* ------------------------------------------------------ 3b. PLANS / TOKENS */
+
+/* Pricing shown on the landing page and in Settings. Edit these two lines. */
+const PLAN_PRICE = "200";        // per month
+const PLAN_PRICE_YEAR = "2000";  // per year (instead of 12 × 200 = 2400)
+const PLAN_CURRENCY = "EGP";
+const TRIAL_DAYS = 14;
+const PENDING_TOKEN_KEY = "tapit-pending-token";
+
+/* Card tokens look like TAP-XXXX-XXXX. Normalises spacing/case/dashes. */
+function normalizeToken(raw) {
+  const s = String(raw || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const body = s.startsWith("TAP") ? s.slice(3) : s;
+  if (body.length !== 8) return null;
+  return `TAP-${body.slice(0, 4)}-${body.slice(4)}`;
+}
+
+/* What the account is allowed to do right now.
+   kind: "card" (free via Tap-it card) | "monthly" | "trial" | "expired" */
+function planStatus(account) {
+  const now = Date.now();
+  const plan = account?.plan || "trial";
+  if (plan === "card" && (!account.planExpiresAt || account.planExpiresAt > now)) return { active: true, kind: "card" };
+  if ((plan === "monthly" || plan === "annual") && account.planExpiresAt && account.planExpiresAt > now) {
+    return { active: true, kind: plan, daysLeft: Math.ceil((account.planExpiresAt - now) / 864e5) };
+  }
+  if (plan === "trial" && account.trialEndsAt && account.trialEndsAt > now) {
+    return { active: true, kind: "trial", daysLeft: Math.ceil((account.trialEndsAt - now) / 864e5) };
+  }
+  return { active: false, kind: "expired" };
+}
+
+const pendingToken = {
+  get() { try { return sessionStorage.getItem(PENDING_TOKEN_KEY) || ""; } catch { return ""; } },
+  set(v) { try { sessionStorage.setItem(PENDING_TOKEN_KEY, v); } catch {} },
+  clear() { try { sessionStorage.removeItem(PENDING_TOKEN_KEY); } catch {} },
 };
 
 /* ------------------------------------------------- 4. VALIDATION / SECURITY */
@@ -1655,6 +1719,7 @@ function Nav({ go, user }) {
         <nav className="row hide-sm" style={{ marginLeft: 18, gap: 2 }} aria-label="Main">
           <button className="nav-lnk" onClick={() => jump("features")}>Features</button>
           <button className="nav-lnk" onClick={() => jump("how")}>How it works</button>
+          <button className="nav-lnk" onClick={() => jump("pricing")}>Pricing</button>
         </nav>
         <div className="grow" />
         {user ? (
@@ -1682,6 +1747,7 @@ function Nav({ go, user }) {
           <div className="card pad stack" style={{ "--gap": "4px" }}>
             <button className="nav-lnk" onClick={() => jump("features")}>Features</button>
             <button className="nav-lnk" onClick={() => jump("how")}>How it works</button>
+            <button className="nav-lnk" onClick={() => jump("pricing")}>Pricing</button>
             {!user && <button className="nav-lnk" onClick={() => { setOpen(false); go("/login"); }}>Log in</button>}
             {user && <button className="nav-lnk" onClick={() => { setOpen(false); go("/login"); }}>Switch account</button>}
           </div>
@@ -1771,7 +1837,7 @@ function Landing({ go, user }) {
           <div className="hero-dots" aria-hidden="true" />
           <div className="wrap hero-grid">
             <div>
-              <span className="pill pill-n">Free to start — no card needed</span>
+              <span className="pill pill-n">{TRIAL_DAYS}-day free trial · free with any Tap-it card</span>
               <TextReveal as="h1" mode="mask" onScroll={false} delay={0.15} className="h1" style={{ marginTop: 18 }} text="One link. Everything you are." />
               <p className="lede">
                 Create a beautiful home for everything you create, share, and recommend. Bring your audience to one
@@ -1779,7 +1845,7 @@ function Landing({ go, user }) {
               </p>
               <div className="hero-cta">
                 <Magnet>
-                  <Button size="lg" onClick={() => go("/signup")}>Get started — it's free</Button>
+                  <Button size="lg" onClick={() => go("/signup")}>Start your free trial</Button>
                 </Magnet>
                 <Magnet>
                   <Button variant="g" size="lg" onClick={() => scrollToTarget("how")}>
@@ -1841,6 +1907,8 @@ function Landing({ go, user }) {
           </div>
         </section>
 
+        <Pricing go={go} user={user} />
+
         <section className="sec">
           <div className="wrap">
             <Reveal className="cta-band" y={40} scale={0.96}>
@@ -1868,6 +1936,187 @@ function Landing({ go, user }) {
         </div>
       </Modal>
     </>
+  );
+}
+
+function Pricing({ go, user }) {
+  const toast = useToast();
+  const [yearly, setYearly] = useState(false);
+  const save = Number(PLAN_PRICE) * 12 - Number(PLAN_PRICE_YEAR);
+  const [token, setToken] = useState("");
+  const [err, setErr] = useState(null);
+
+  const redeem = (e) => {
+    e.preventDefault();
+    const code = normalizeToken(token);
+    if (!code) { setErr("Tokens look like TAP-XXXX-XXXX."); return; }
+    pendingToken.set(code);
+    if (user) {
+      go("/dashboard/settings");
+      toast("Token ready. Confirm it in the Plan section.");
+    } else {
+      go("/signup");
+      toast("Create your account and we'll apply your token.");
+    }
+  };
+
+  return (
+    <section className="sec" id="pricing" style={{ paddingTop: 0 }}>
+      <div className="wrap">
+        <div className="sec-h" style={{ marginLeft: "auto", marginRight: "auto", textAlign: "center" }}>
+          <TextReveal as="h2" text="Simple pricing" />
+          <Reveal as="p" delay={0.15} y={18}>Bought a Tap-it card? Your page is on us, for as long as you have it.</Reveal>
+        </div>
+        <Reveal className="price-grid" selector=".price-c" stagger={0.12}>
+          <div className="price-c">
+            <div className="row-b" style={{ flexWrap: "wrap" }}>
+              <h3>{yearly ? "Annual" : "Monthly"}</h3>
+              <div className="bill-tog" role="group" aria-label="Billing period">
+                <button type="button" aria-pressed={!yearly} onClick={() => setYearly(false)}>Monthly</button>
+                <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>Yearly</button>
+              </div>
+            </div>
+            <div className="price-n">
+              {yearly ? PLAN_PRICE_YEAR : PLAN_PRICE} <span>{PLAN_CURRENCY} / {yearly ? "year" : "month"}</span>
+            </div>
+            <p className="mut sm" style={{ marginTop: -8 }}>
+              {yearly
+                ? <>Save {save} {PLAN_CURRENCY} vs paying monthly ({Number(PLAN_PRICE) * 12} {PLAN_CURRENCY})</>
+                : <>Or {PLAN_PRICE_YEAR} {PLAN_CURRENCY} billed yearly — save {save} {PLAN_CURRENCY}</>}
+            </p>
+            <ul>
+              <li>{I.check} {TRIAL_DAYS}-day free trial</li>
+              <li>{I.check} Unlimited links and themes</li>
+              <li>{I.check} Analytics</li>
+              <li>{I.check} Cancel anytime</li>
+            </ul>
+            <Button className="btn-blk" onClick={() => go(user ? "/dashboard/settings" : "/signup")}>
+              {user ? "Manage plan" : "Start free trial"}
+            </Button>
+          </div>
+          <div className="price-c price-c-dark">
+            <div className="row-b" style={{ flexWrap: "wrap" }}>
+              <h3>Card owner</h3>
+              <span className="pill" style={{ background: "#fff", color: "#111" }}>With any Tap-it card</span>
+            </div>
+            <div className="price-n">Free <span>forever</span></div>
+            <ul>
+              <li>{I.check} Everything in Monthly</li>
+              <li>{I.check} Unlocked with the token in your card box</li>
+              <li>{I.check} One token, one page</li>
+            </ul>
+            <form onSubmit={redeem} noValidate>
+              <label htmlFor="pr-token" className="fld-lab" style={{ color: "#ddd" }}>Your card token</label>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <input
+                  id="pr-token"
+                  className="inp tok-inp"
+                  placeholder="TAP-XXXX-XXXX"
+                  value={token}
+                  autoComplete="off"
+                  spellCheck="false"
+                  aria-invalid={err ? "true" : undefined}
+                  onChange={(e) => { setToken(e.target.value.toUpperCase()); setErr(null); }}
+                />
+                <button type="submit" className="btn" style={{ background: "#fff", color: "#111" }}>Redeem</button>
+              </div>
+              {err && <div className="err" style={{ color: "#FCA5A5" }}>{I.alert}<span>{err}</span></div>}
+            </form>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/** Plan status + token redemption. Used in Settings. */
+function PlanCard() {
+  const { user, redeemToken } = useAuth();
+  const toast = useToast();
+  const st = planStatus(user.account);
+  const [token, setToken] = useState(() => pendingToken.get());
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const redeem = async () => {
+    setBusy(true);
+    const res = await redeemToken(token);
+    setBusy(false);
+    if (!res.ok) { setErr(res.error); return; }
+    pendingToken.clear();
+    setToken("");
+    toast("Card token redeemed. Your page is free for good.");
+  };
+
+  const label =
+    st.kind === "card" ? "Free — Tap-it card owner" :
+    st.kind === "annual" ? `Yearly · renews in ${st.daysLeft} day${st.daysLeft === 1 ? "" : "s"}` :
+    st.kind === "monthly" ? `Monthly · renews in ${st.daysLeft} day${st.daysLeft === 1 ? "" : "s"}` :
+    st.kind === "trial" ? `Free trial · ${st.daysLeft} day${st.daysLeft === 1 ? "" : "s"} left` :
+    "No active plan — your page is hidden";
+
+  return (
+    <div className="card pad-l" id="plan">
+      <div className="row-b" style={{ flexWrap: "wrap" }}>
+        <h3 style={{ fontSize: 17 }}>Plan</h3>
+        <span className={"pill " + (st.kind === "expired" ? "pill-bad" : st.kind === "trial" ? "pill-w" : "pill-ok")}>{label}</span>
+      </div>
+      {st.kind !== "card" && (
+        <>
+          <p className="mut sm" style={{ marginTop: 8 }}>
+            Subscribe for {PLAN_PRICE} {PLAN_CURRENCY}/month or {PLAN_PRICE_YEAR} {PLAN_CURRENCY}/year, or enter the token from your Tap-it card box to use your page free.
+          </p>
+          <div className="stack" style={{ "--gap": "12px", marginTop: 16 }}>
+            <Field label="Card token" id="st-token" error={err}>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                <TextInput
+                  id="st-token"
+                  placeholder="TAP-XXXX-XXXX"
+                  value={token}
+                  autoComplete="off"
+                  spellCheck="false"
+                  style={{ flex: 1, minWidth: 180, letterSpacing: ".06em" }}
+                  onChange={(e) => { setToken(e.target.value.toUpperCase()); setErr(null); }}
+                  error={err}
+                />
+                <Button onClick={redeem} loading={busy} disabled={!token.trim()}>Redeem</Button>
+              </div>
+            </Field>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <Button variant="g" onClick={() => toast("Online payments are coming soon. Contact Tap-it to subscribe.", "bad")}>
+                Monthly — {PLAN_PRICE} {PLAN_CURRENCY}
+              </Button>
+              <Button variant="g" onClick={() => toast("Online payments are coming soon. Contact Tap-it to subscribe.", "bad")}>
+                Yearly — {PLAN_PRICE_YEAR} {PLAN_CURRENCY}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+      {st.kind === "card" && (
+        <p className="mut sm" style={{ marginTop: 8 }}>Your page is unlocked by your Tap-it card. Nothing to pay.</p>
+      )}
+    </div>
+  );
+}
+
+/** Slim banner across the dashboard while on trial or after it ends. */
+function PlanBanner({ go }) {
+  const { user } = useAuth();
+  const st = planStatus(user.account);
+  if (st.kind === "card" || st.kind === "monthly" || st.kind === "annual") return null;
+  const expired = st.kind === "expired";
+  return (
+    <div className={"plan-ban" + (expired ? " bad" : "")} role="status">
+      <span className="grow sm">
+        {expired
+          ? "Your free trial has ended. Visitors can't see your page until you subscribe or redeem a card token."
+          : `${st.daysLeft} day${st.daysLeft === 1 ? "" : "s"} left in your free trial. Got a Tap-it card? Redeem it to stay free.`}
+      </span>
+      <Button size="sm" variant={expired ? "p" : "g"} onClick={() => go("/dashboard/settings")}>
+        {expired ? "Unlock my page" : "Redeem card"}
+      </Button>
+    </div>
   );
 }
 
@@ -2243,7 +2492,7 @@ const STARTER_LINKS = [
 ];
 
 function Onboarding({ go }) {
-  const { user, patchUser } = useAuth();
+  const { user, patchUser, redeemToken } = useAuth();
   const toast = useToast();
   const [step, setStep] = useState(0);
   useLayoutEffect(() => {
@@ -2290,6 +2539,13 @@ function Onboarding({ go }) {
       rec.links = links;
       rec.account.onboarded = true;
     });
+    /* A token entered on the landing page before signup gets applied here. */
+    const pending = pendingToken.get();
+    if (pending) {
+      const res = await redeemToken(pending);
+      if (res.ok) { pendingToken.clear(); toast("Card token redeemed. Your page is free for good."); }
+      else toast(`${res.error} You can retry in Settings.`, "bad");
+    }
     await sleep(320);
     setBusy(false);
     toast("Your page is live. Share it anywhere.");
@@ -2640,7 +2896,7 @@ function DashboardShell({ go, route, children }) {
             <Avatar src={user.profile.avatar} name={user.profile.displayName} size={34} />
           </div>
         </div>
-        <div className="dash-body"><div className="dash-sec" key={section} ref={secRef}>{children}</div></div>
+        <div className="dash-body"><PlanBanner go={go} /><div className="dash-sec" key={section} ref={secRef}>{children}</div></div>
         <nav className="mobile-bar" aria-label="Sections">
           {NAV_ITEMS.map((n) => (
             <button
@@ -3715,6 +3971,8 @@ function Settings({ go }) {
         <p className="mut sm" style={{ marginTop: 6 }}>Account details, your URL, and the destructive stuff at the bottom.</p>
       </div>
 
+      <PlanCard />
+
       <div className="card pad-l">
         <h3 style={{ fontSize: 17 }}>Your URL</h3>
         <p className="mut sm" style={{ marginTop: 5 }}>Changing this breaks the old link everywhere you've shared it.</p>
@@ -3929,14 +4187,16 @@ function PublicProfile({ username, go }) {
   const theme = getTheme(rec.profile);
   const isOwner = me?.account.username === rec.account.username;
 
-  if (rec.account.deactivated && !isOwner) {
+  const plan = planStatus(rec.account);
+
+  if ((rec.account.deactivated || !plan.active) && !isOwner) {
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, textAlign: "center" }}>
         <div>
           <Logo onClick={() => go("/")} />
           <h1 style={{ fontSize: 30, marginTop: 24 }}>This page isn't available right now</h1>
           <p className="mut" style={{ marginTop: 10, maxWidth: "40ch" }}>
-            The owner has temporarily deactivated it.
+            {rec.account.deactivated ? "The owner has temporarily deactivated it." : "Check back soon."}
           </p>
           <div className="row" style={{ justifyContent: "center", marginTop: 24, gap: 10 }}>
             <Button variant="g" onClick={() => go("/")}>Back to Tap-it</Button>
@@ -3954,6 +4214,8 @@ function PublicProfile({ username, go }) {
             <span className="sm">
               {rec.account.deactivated
                 ? "Your page is deactivated — visitors see an unavailable message. Only you can see this preview."
+                : !plan.active
+                ? "Your trial has ended — visitors see an unavailable message. Subscribe or redeem a card token in Settings."
                 : "You're viewing your own page. Clicks here count in analytics."}
             </span>
             <Button size="sm" variant="g" onClick={() => go("/dashboard")}>Back to dashboard</Button>
@@ -4170,6 +4432,19 @@ export default function App() {
         { emailRedirectTo: `${window.location.origin}${window.location.pathname}#/settings` }
       );
       if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    },
+    async redeemToken(raw) {
+      const code = normalizeToken(raw);
+      if (!code) return { ok: false, error: "Tokens look like TAP-XXXX-XXXX. Check the one in your card box." };
+      /* redeem_card_token() runs server-side (see supabase_plans.sql): it
+         locks the token row, checks it's unused, marks it redeemed and
+         switches this account to the free card plan in one transaction. */
+      const { data, error } = await supabase.rpc("redeem_card_token", { p_code: code });
+      if (error) return { ok: false, error: "Couldn't redeem that token right now. Try again." };
+      if (!data?.ok) return { ok: false, error: data?.error || "That token isn't valid." };
+      const rec = await db.user(user.account.username);
+      if (rec) setUser(rec);
       return { ok: true };
     },
     async deactivateLink() {
