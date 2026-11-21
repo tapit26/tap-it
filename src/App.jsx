@@ -273,7 +273,7 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 .mv-col { display:flex; flex-direction:column; gap:10px; min-width:0; }
 .mv { position:relative; isolation:isolate; min-height:100%; }
 .mv-bg { position:sticky; top:0; height:100vh; margin-bottom:-100vh; z-index:-1; overflow:hidden; pointer-events:none; }
-.mv-bg.fixed { position:fixed; inset:0; height:auto; margin:0; }
+.pub-bg { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
 .mv-bg-img { position:absolute; inset:0; background-size:cover; background-position:center; animation: bgIn .7s ease; }
 @keyframes bgIn { from { opacity:0; transform:scale(1.06); } }
 .mv-has-bg .mv-bar, .mv-has-bg .mv-bar .mv-ic, .mv-has-bg .mv-bar .mn-lang { color:#fff !important; }
@@ -1357,7 +1357,7 @@ function saveContact(profile, username) {
 }
 
 /** The one component reused by the hero mockup, onboarding, dashboard preview and the public page. */
-function ProfileCanvas({ profile, links, interactive = false, onLinkClick, username, fillParentBg = false, animate = false }) {
+function ProfileCanvas({ profile, links, interactive = false, onLinkClick, username, fillParentBg = false, animate = false, onPageBg }) {
   const rootRef = useRef(null);
   useLayoutEffect(() => {
     const el = rootRef.current;
@@ -1395,6 +1395,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
     setMenuOpen(false);
     requestAnimationFrame(toTop);
   };
+  useEffect(() => { if (!menuOpen) onPageBg?.(""); }, [menuOpen]);
   useEffect(() => {
     if (!interactive || !menuOpen) return;
     const onPop = () => { pushed.current = false; setMenuOpen(false); requestAnimationFrame(toTop); };
@@ -1407,7 +1408,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
   if (hasMenu && menuOpen) {
     return (
       <div className="pf pf-menu" ref={rootRef} data-lenis-prevent={interactive ? undefined : ""} style={pfStyle}>
-        <MenuView profile={profile} theme={theme} appearance={appearance} scrollerRef={rootRef} onClose={closeMenu} fixedBg={interactive} />
+        <MenuView profile={profile} theme={theme} appearance={appearance} scrollerRef={rootRef} onClose={closeMenu} onPageBg={onPageBg} />
         <div className="pf-foot"><span className="pf-foot-badge">Powered by Tap-it</span></div>
       </div>
     );
@@ -1604,7 +1605,7 @@ function menuFromCsv(text) {
     if (!byName[cName].photo && /^https:\/\//i.test(cp)) byName[cName].photo = cp;
     const photo = get(r, "photo");
     byName[cName].items.push({
-      name, nameAr: get(r, "itemAr"),
+      cat: cName, name, nameAr: get(r, "itemAr"),
       price: get(r, "price"),
       desc: get(r, "desc"), descAr: get(r, "descAr"),
       photo: /^https:\/\//i.test(photo) ? photo : "",
@@ -1642,11 +1643,13 @@ function useMenu(sheetUrl, reloadKey = 0) {
 
 /* Category banner photo: sheet column first, then the dashboard upload. */
 const catPhotoKey = (name) => "cat:" + photoKey(name);
+const itemKey = (cat, name) => "item:" + photoKey(cat) + "|" + photoKey(name);
 function categoryPhoto(profile, c) {
   return c.photo || profile.menuPhotos?.[catPhotoKey(c.name)] || "";
 }
 function itemPhoto(profile, it) {
-  return it.photo || profile.menuPhotos?.[photoKey(it.name)] || "";
+  const p = profile.menuPhotos || {};
+  return it.photo || p[itemKey(it.cat, it.name)] || p[photoKey(it.name)] || "";
 }
 
 /* Full-page background per category: sheet "Page Background" column, then upload. */
@@ -1686,7 +1689,7 @@ function MenuButton({ theme, appearance, onOpen }) {
 }
 
 /** Full-page menu: sticky header + category chips, a banner per category, list or 2-up grid. */
-function MenuView({ profile, theme, appearance, scrollerRef, onClose, fixedBg = false }) {
+function MenuView({ profile, theme, appearance, scrollerRef, onClose, onPageBg }) {
   const live = useMenu(profile.menuDemo ? "" : profile.menuSheetUrl);
   const menu = profile.menuDemo || live.menu;
   const loading = !profile.menuDemo && live.loading;
@@ -1724,11 +1727,13 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose, fixedBg = 
 
   const curCat = menu?.categories[Math.min(active, (menu?.categories.length || 1) - 1)];
   const pageBg = curCat ? categoryPageBg(profile, curCat) : "";
+  /* On the real page the background is drawn full-screen by PublicProfile. */
+  useEffect(() => { onPageBg?.(pageBg); }, [pageBg]);
 
   return (
-    <div className={"mv" + (pageBg ? " mv-has-bg" : "")} dir={ar ? "rtl" : "ltr"}>
-      {pageBg && (
-        <div className={"mv-bg" + (fixedBg ? " fixed" : "")} aria-hidden="true">
+    <div className={"mv" + (pageBg ? " mv-has-bg" : "")} dir={ar ? "rtl" : "ltr"} style={onPageBg ? { minHeight: "100vh" } : undefined}>
+      {pageBg && !onPageBg && (
+        <div className="mv-bg" aria-hidden="true">
           <div key={pageBg} className="mv-bg-img" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.62)), url(${pageBg})` }} />
         </div>
       )}
@@ -2380,20 +2385,21 @@ function Landing({ go, user }) {
 
 /* ------------------------------------------------- 8b. RESTAURANTS LANDING */
 
+/* Demo photos live in the project's public/demo/ folder. */
 const DEMO_MENU = {
   count: 7,
   categories: [
-    { name: "Coffee", nameAr: "قهوة", items: [
-      { name: "Flat white", nameAr: "فلات وايت", price: "75", desc: "Double ristretto, silky milk", descAr: "ريستريتو مزدوج وحليب" },
-      { name: "Spanish latte", nameAr: "سبانش لاتيه", price: "85", desc: "Condensed milk, espresso", descAr: "حليب مكثف وإسبريسو" },
-      { name: "V60 pour-over", nameAr: "في ٦٠", price: "90", desc: "Ethiopian single origin", descAr: "بن إثيوبي" },
+    { name: "Coffee", nameAr: "قهوة", photo: "/demo/coffee-banner.jpg", pageBg: "/demo/coffee-page.jpg", items: [
+      { name: "Espresso", nameAr: "إسبريسو", price: "55", desc: "Double shot, house blend", descAr: "شوت مزدوج", photo: "/demo/item-espresso.jpg" },
+      { name: "Flat white", nameAr: "فلات وايت", price: "75", desc: "Double ristretto, silky milk", descAr: "ريستريتو مزدوج وحليب", photo: "/demo/item-flatwhite.jpg" },
+      { name: "Spanish latte", nameAr: "سبانش لاتيه", price: "85", desc: "Condensed milk, espresso", descAr: "حليب مكثف وإسبريسو", photo: "/demo/item-latte.jpg" },
     ] },
-    { name: "Breakfast", nameAr: "فطار", items: [
-      { name: "Shakshuka", nameAr: "شكشوكة", price: "120", desc: "Baked eggs, tomato, feta", descAr: "بيض وطماطم وجبنة فيتا" },
+    { name: "Breakfast", nameAr: "فطار", photo: "/demo/breakfast-banner.jpg", pageBg: "/demo/breakfast-page.jpg", items: [
+      { name: "Shakshuka", nameAr: "شكشوكة", price: "120", desc: "Baked eggs, tomato, feta", descAr: "بيض وطماطم وجبنة فيتا", photo: "/demo/item-shakshuka.jpg" },
       { name: "Avocado toast", nameAr: "توست أفوكادو", price: "135", desc: "Sourdough, chili flakes", descAr: "خبز ساوردو وشطة" },
     ] },
-    { name: "Desserts", nameAr: "حلويات", items: [
-      { name: "Basque cheesecake", nameAr: "تشيز كيك باسك", price: "110", desc: "", descAr: "" },
+    { name: "Desserts", nameAr: "حلويات", photo: "/demo/desserts-banner.jpg", pageBg: "/demo/desserts-page.jpg", items: [
+      { name: "Matcha cheesecake", nameAr: "تشيز كيك ماتشا", price: "110", desc: "Whipped cream, matcha dust", descAr: "كريمة وماتشا", photo: "/demo/item-matcha.jpg" },
       { name: "Molten cake", nameAr: "مولتن كيك", price: "95", desc: "With vanilla ice cream", descAr: "مع آيس كريم" },
     ] },
   ],
@@ -2404,7 +2410,7 @@ const BIZ_PROFILE = {
   avatar: null,
   socials: [{ platform: "instagram", url: "#" }, { platform: "tiktok", url: "#" }, { platform: "whatsapp", url: "#" }, { platform: "gmaps", url: "#" }],
   theme: "paper", buttonStyle: "soft", radius: "round", font: "manrope",
-  accountType: "business", menuDemo: DEMO_MENU, menuCurrency: "EGP",
+  accountType: "business", menuDemo: DEMO_MENU, menuCurrency: "EGP", menuLayout: "grid",
 };
 const BIZ_LINKS = [
   { id: "b1", title: "Rate us on Google", url: "#", active: true, icon: "review", badge: "★ 4.8" },
@@ -4172,11 +4178,11 @@ function MenuPage() {
                       );
                     })()}
                     <div className="stack" style={{ "--gap": "8px" }}>
-                      {c.items.map((it) => {
-                        const key = photoKey(it.name);
+                      {c.items.map((it, idx) => {
+                        const key = photos[itemKey(c.name, it.name)] || !photos[photoKey(it.name)] ? itemKey(c.name, it.name) : photoKey(it.name);
                         const src = it.photo || photos[key];
                         return (
-                          <div key={key} className="row" style={{ border: "1px solid var(--line)", borderRadius: 13, padding: "8px 10px", gap: 12 }}>
+                          <div key={key + idx} className="row" style={{ border: "1px solid var(--line)", borderRadius: 13, padding: "8px 10px", gap: 12 }}>
                             <div className="mp-th">{src ? <img src={src} alt="" /> : I.plus}</div>
                             <span className="grow sm trunc" style={{ fontWeight: 600 }}>{it.name}</span>
                             {it.photo ? (
@@ -4187,9 +4193,9 @@ function MenuPage() {
                                   {photoBusy === key ? <span className="spin" aria-hidden="true" /> : null}
                                   {photos[key] ? "Replace" : "Add photo"}
                                   <input type="file" accept="image/*" style={{ display: "none" }} disabled={!!photoBusy}
-                                    onChange={(e) => { uploadPhoto(it.name, e.target.files?.[0]); e.target.value = ""; }} />
+                                    onChange={(e) => { uploadPhoto(it.name, e.target.files?.[0], itemKey(c.name, it.name)); e.target.value = ""; }} />
                                 </label>
-                                {photos[key] && <button className="icobtn danger" aria-label={`Remove photo of ${it.name}`} onClick={() => removePhoto(it.name)}>{I.trash}</button>}
+                                {photos[key] && <button className="icobtn danger" aria-label={`Remove photo of ${it.name}`} onClick={() => removePhoto(it.name, key)}>{I.trash}</button>}
                               </>
                             )}
                           </div>
@@ -4983,6 +4989,7 @@ function PublicProfile({ username, go }) {
   const { user: me, refresh } = useAuth();
   const toast = useToast();
   const counted = useRef(false);
+  const [pageBg, setPageBg] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -5063,7 +5070,12 @@ function PublicProfile({ username, go }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: theme.bg }}>
+    <div style={{ minHeight: "100vh", background: theme.bg, position: "relative", isolation: "isolate" }}>
+      {pageBg && (
+        <div className="pub-bg" aria-hidden="true">
+          <div key={pageBg} className="mv-bg-img" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.62)), url(${pageBg})` }} />
+        </div>
+      )}
       {isOwner && (
         <div style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(17,17,17,.92)", color: "#fff", padding: "9px 14px", backdropFilter: "blur(8px)" }}>
           <div className="row-b wrap" style={{ padding: 0 }}>
@@ -5079,7 +5091,7 @@ function PublicProfile({ username, go }) {
         </div>
       )}
       <div style={{ maxWidth: 520, margin: "0 auto", minHeight: "100vh" }}>
-        <ProfileCanvas profile={rec.profile} links={rec.links} interactive onLinkClick={onLinkClick} username={rec.account.username} fillParentBg animate />
+        <ProfileCanvas profile={rec.profile} links={rec.links} interactive onLinkClick={onLinkClick} username={rec.account.username} fillParentBg animate onPageBg={setPageBg} />
         <div style={{ textAlign: "center", padding: "10px 20px 42px" }}>
           <button
             onClick={() => go("/signup")}
