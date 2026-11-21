@@ -921,9 +921,9 @@ function planStatus(account) {
 }
 
 const pendingToken = {
-  get() { try { return sessionStorage.getItem(PENDING_TOKEN_KEY) || ""; } catch { return ""; } },
-  set(v) { try { sessionStorage.setItem(PENDING_TOKEN_KEY, v); } catch {} },
-  clear() { try { sessionStorage.removeItem(PENDING_TOKEN_KEY); } catch {} },
+  get() { try { return localStorage.getItem(PENDING_TOKEN_KEY) || ""; } catch { return ""; } },
+  set(v) { try { localStorage.setItem(PENDING_TOKEN_KEY, v); } catch {} },
+  clear() { try { localStorage.removeItem(PENDING_TOKEN_KEY); } catch {} },
 };
 
 /* ------------------------------------------------- 4. VALIDATION / SECURITY */
@@ -1850,6 +1850,10 @@ const useAuth = () => useContext(AuthCtx);
 function useHashRoute() {
   const read = () => {
     const h = window.location.hash.replace(/^#/, "") || "/";
+    /* Email confirmation links land here with tokens instead of a page path. */
+    if (/(^|&)(access_token|error_description|error_code)=/.test(h)) {
+      return { path: "/auth-callback", query: new URLSearchParams(h) };
+    }
     const [path, qs] = h.split("?");
     return { path: path.replace(/\/+$/, "") || "/", query: new URLSearchParams(qs || "") };
   };
@@ -2753,12 +2757,16 @@ function AuthShell({ go, children, footer }) {
 }
 
 function Login({ go }) {
-  const { login } = useAuth();
+  const { login, resendConfirmation } = useAuth();
   const toast = useToast();
   const [f, setF] = useState({ email: "", password: "", remember: true });
   const [errs, setErrs] = useState({});
   const [busy, setBusy] = useState(false);
-  const [top, setTop] = useState("");
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [top, setTop] = useState(() => {
+    const m = window.location.hash.match(/confirm_error=([^&]*)/);
+    return m ? decodeURIComponent(m[1]) + " Log in to get a new link." : "";
+  });
 
   const set = (k) => (e) => {
     const v = e.target.type === "checkbox" ? e.target.checked : e.target.value;
@@ -2782,7 +2790,7 @@ function Login({ go }) {
     setBusy(true);
     const res = await login(f.email, f.password, f.remember);
     setBusy(false);
-    if (!res.ok) { setTop(res.error); return; }
+    if (!res.ok) { setTop(res.error); setUnconfirmed(!!res.unconfirmed); return; }
     toast(`Welcome back, ${res.user.profile.displayName.split(" ")[0]}.`);
     go(res.user.onboarded ? "/dashboard" : "/onboarding", { replace: true });
   };
@@ -2796,6 +2804,12 @@ function Login({ go }) {
         <div role="alert" style={{ marginTop: 18, background: "var(--bad-bg)", color: "#B3323C", padding: "11px 13px", borderRadius: 12, fontSize: 14, display: "flex", gap: 8 }}>
           <span style={{ display: "flex", marginTop: 2 }}>{I.alert}</span>{top}
         </div>
+      )}
+      {unconfirmed && (
+        <Button variant="g" size="sm" style={{ marginTop: 10 }} onClick={async () => {
+          const r = await resendConfirmation(f.email);
+          toast(r.ok ? "Confirmation email sent again." : r.error, r.ok ? "ok" : "bad");
+        }}>Resend confirmation email</Button>
       )}
 
       <form onSubmit={submit} noValidate className="stack" style={{ marginTop: 20, "--gap": "16px" }}>
@@ -2828,6 +2842,7 @@ function Signup({ go }) {
   const [busy, setBusy] = useState(false);
   const [top, setTop] = useState("");
   const [uState, setUState] = useState({ status: "idle", msg: "" });
+  const [sentTo, setSentTo] = useState("");
   const timer = useRef(null);
 
   const set = (k) => (e) => {
@@ -2882,9 +2897,12 @@ function Signup({ go }) {
       else setTop(res.error);
       return;
     }
+    if (res.needsEmailConfirmation) { setSentTo(f.email.trim()); return; }
     toast("Account created. Let's set up your page.");
     go("/onboarding", { replace: true });
   };
+
+  if (sentTo) return <CheckInbox go={go} email={sentTo} />;
 
   return (
     <AuthShell go={go} footer={<>Already have an account? <button className="btn btn-q btn-sm" onClick={() => go("/login")} style={{ padding: "2px 6px", color: "var(--p)", fontWeight: 600 }}>Log in</button></>}>
@@ -2945,6 +2963,40 @@ function Signup({ go }) {
         </div>
         <Button type="submit" className="btn-blk" loading={busy}>{busy ? "Creating account" : "Create account"}</Button>
       </form>
+    </AuthShell>
+  );
+}
+
+/** Shown after signup until the person clicks the link in their email. */
+function CheckInbox({ go, email }) {
+  const { resendConfirmation } = useAuth();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [wait, setWait] = useState(0);
+  useEffect(() => {
+    if (!wait) return;
+    const t = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(t);
+  }, [wait]);
+  const resend = async () => {
+    setBusy(true);
+    const res = await resendConfirmation(email);
+    setBusy(false);
+    if (!res.ok) { toast(res.error, "bad"); return; }
+    toast("Sent again. Check your inbox and spam folder.");
+    setWait(60);
+  };
+  return (
+    <AuthShell go={go} footer={<button className="btn btn-q btn-sm" onClick={() => go("/login")} style={{ color: "var(--p)", fontWeight: 600 }}>Back to log in</button>}>
+      <div style={{ width: 46, height: 46, borderRadius: 14, background: "var(--ok-bg)", color: "#0A7A55", display: "flex", alignItems: "center", justifyContent: "center" }}>{I.check}</div>
+      <h1 style={{ marginTop: 16 }}>Confirm your email</h1>
+      <p className="mut sm" style={{ marginTop: 8 }}>
+        We sent a link to <b>{email}</b>. Open it on this device to activate your account and set up your page.
+      </p>
+      <p className="mut tiny" style={{ marginTop: 10 }}>Can't find it? Check spam or promotions. The link works once.</p>
+      <Button variant="g" className="btn-blk" style={{ marginTop: 18 }} loading={busy} disabled={wait > 0} onClick={resend}>
+        {wait > 0 ? `Resend in ${wait}s` : "Resend email"}
+      </Button>
     </AuthShell>
   );
 }
@@ -3089,9 +3141,9 @@ const BUSINESS_STARTER_LINKS = [
 
 /* Set by the restaurants landing page so onboarding starts as a business. */
 const pendingType = {
-  get() { try { return sessionStorage.getItem("tapit-pending-type") || ""; } catch { return ""; } },
-  set(v) { try { sessionStorage.setItem("tapit-pending-type", v); } catch {} },
-  clear() { try { sessionStorage.removeItem("tapit-pending-type"); } catch {} },
+  get() { try { return localStorage.getItem("tapit-pending-type") || ""; } catch { return ""; } },
+  set(v) { try { localStorage.setItem("tapit-pending-type", v); } catch {} },
+  clear() { try { localStorage.removeItem("tapit-pending-type"); } catch {} },
 };
 
 function Onboarding({ go }) {
@@ -5155,12 +5207,21 @@ export default function App() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       const authUser = data?.session?.user;
+      let rec = null;
       if (authUser) {
         const { data: profileRow } = await supabase.from("profiles").select("username").eq("id", authUser.id).maybeSingle();
         if (profileRow) {
-          const rec = await db.user(profileRow.username);
+          rec = await db.user(profileRow.username);
           if (alive && rec) setUser(rec);
         }
+      }
+      /* Came back from the confirmation email: clean the URL and move on. */
+      const h = window.location.hash;
+      if (/access_token=/.test(h)) {
+        window.location.replace("#" + (rec ? (rec.account.onboarded ? "/dashboard" : "/onboarding") : "/login"));
+      } else if (/error_description=|error_code=/.test(h)) {
+        const msg = decodeURIComponent((h.match(/error_description=([^&]*)/) || [])[1] || "").replace(/\+/g, " ");
+        window.location.replace("#/login?confirm_error=" + encodeURIComponent(msg || "That link has expired."));
       }
       if (alive) setBooting(false);
     })();
@@ -5205,6 +5266,9 @@ export default function App() {
         password,
       });
       if (error) {
+        if (/not confirmed/i.test(error.message)) {
+          return { ok: false, unconfirmed: true, error: "Confirm your email first. Check your inbox (and spam) for the link from Tap-it." };
+        }
         return { ok: false, error: "That email and password don't match an account." };
       }
       const { data: profileRow } = await supabase
@@ -5230,6 +5294,7 @@ export default function App() {
         email: f.email.trim().toLowerCase(),
         password: f.password,
         options: {
+          emailRedirectTo: `${window.location.origin}${window.location.pathname}`,
           data: {
             username,
             display_name: clean(f.name, 60),
@@ -5242,6 +5307,9 @@ export default function App() {
       }
       if (!data.user) {
         return { ok: false, error: "Something went wrong creating your account." };
+      }
+      if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        return { ok: false, field: "email", error: "An account with this email already exists. Log in instead." };
       }
 
       /* The profiles row is created server-side by a Postgres trigger
@@ -5301,6 +5369,14 @@ export default function App() {
       );
       if (error) return { ok: false, error: error.message };
       return { ok: true };
+    },
+    async resendConfirmation(email) {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` },
+      });
+      return error ? { ok: false, error: error.message } : { ok: true };
     },
     async redeemToken(raw) {
       const code = normalizeToken(raw);
@@ -5366,6 +5442,11 @@ export default function App() {
     );
   } else if (path === "/") view = <Landing go={go} user={user} />;
   else if (path === "/business") view = <BusinessLanding go={go} user={user} />;
+  else if (path === "/auth-callback") view = (
+    <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+      <div className="mut sm">Confirming your email…</div>
+    </div>
+  );
   else if (path === "/login") view = <Login go={go} />;
   else if (path === "/signup") view = <Signup go={go} />;
   else if (path === "/forgot-password") view = <ForgotPassword go={go} />;
@@ -5389,7 +5470,7 @@ export default function App() {
       ? <PublicProfile key={candidate} username={candidate} go={go} />
       : <NotFound go={go} />;
   }
-  const isPublicProfile = !booting && !isDash && !isOnboard && !isAuthPage && path !== "/" && path !== "/business" &&
+  const isPublicProfile = !booting && !isDash && !isOnboard && !isAuthPage && path !== "/" && path !== "/business" && path !== "/auth-callback" &&
     /^[a-z0-9._]{1,20}$/.test(path.replace(/^\//, "").toLowerCase());
 
   return (
