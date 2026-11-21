@@ -5047,17 +5047,16 @@ export default function App() {
       return { ok: true };
     },
     async deleteAccount() {
-      /* The anon key can't delete an auth.users row (by design — only a
-         service-role key can, which must never live in frontend code).
-         This removes the user's own data and signs them out; fully
-         deleting the auth account needs a small server-side function
-         (e.g. a Supabase Edge Function using the service role key). */
-      const { error: linksErr } = await supabase.from("links").delete().eq("owner_id", user.account.id);
-      if (linksErr) throw new Error("Couldn't delete your links: " + linksErr.message);
-      const { error: profileErr } = await supabase.from("profiles").delete().eq("id", user.account.id);
-      if (profileErr) throw new Error("Couldn't delete your profile: " + profileErr.message);
-      const { error: signOutErr } = await supabase.auth.signOut();
-      if (signOutErr) throw new Error(signOutErr.message);
+      /* 1. Remove uploaded menu photos (Storage files can't be deleted from SQL). */
+      const { data: files } = await supabase.storage.from("menu-photos").list(user.account.id, { limit: 1000 });
+      if (files?.length) {
+        await supabase.storage.from("menu-photos").remove(files.map((f) => `${user.account.id}/${f.name}`));
+      }
+      /* 2. delete_my_account() (see supabase_delete_account.sql) runs server-side
+         and removes links, analytics, profile AND the login itself. */
+      const { error } = await supabase.rpc("delete_my_account");
+      if (error) throw new Error("Couldn't delete your account: " + error.message);
+      await supabase.auth.signOut();
       setUser(null);
     },
   }), [user, patchUser, refresh]);
