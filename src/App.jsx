@@ -254,12 +254,12 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 
 .mn-btn { padding:17px 18px; font-size:calc(16px * var(--fs-scale, 1)); font-weight:800; box-shadow:0 10px 24px -14px rgba(0,0,0,.55); }
 .pf-menu { padding:0 0 40px; }
-.mv-bar { position:sticky; top:0; z-index:5; padding:12px 14px 8px; backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%); }
+.mv-bar { padding:14px 14px 4px; }
 .mv-top { display:flex; align-items:center; gap:10px; }
 .mv-ic { width:38px; height:38px; flex:none; display:flex; align-items:center; justify-content:center; background:none; border:1px solid; border-radius:999px; cursor:pointer; }
 .mv-name { flex:1; text-align:center; font-family:var(--disp); font-weight:800; font-size:calc(16px * var(--fs-scale, 1)); }
 .mv-bar .mn-tabs { padding:10px 0 2px; }
-.mv-sec { padding:18px 14px 4px; scroll-margin-top:110px; }
+.mv-sec { padding:14px 14px 4px; animation: pgIn .35s ease; }
 .mv-ban { position:relative; height:118px; overflow:hidden; display:flex; align-items:flex-end; color:#fff; isolation:isolate; }
 .mv-ban.plain { height:auto; min-height:64px; }
 .mv-ban-img { position:absolute; inset:0; z-index:-1; background-size:cover; background-position:center; transform:scale(1.12); transition:transform 1.6s cubic-bezier(.2,.8,.3,1), filter .8s ease; filter:saturate(.85) brightness(.9); }
@@ -269,10 +269,10 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 .mv-ban-txt h3 { font-size:calc(21px * var(--fs-scale, 1)); margin:0; letter-spacing:-.02em; transform:translateY(6px); opacity:.85; transition:transform .6s cubic-bezier(.2,.8,.3,1), opacity .6s ease; }
 .mv-ban.on .mv-ban-txt h3 { transform:none; opacity:1; }
 .mv-ban-txt span { font-size:12px; font-weight:700; opacity:.85; white-space:nowrap; }
-.mv-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.mv-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; align-items:start; }
 .mv-gi { display:flex; flex-direction:column; animation: lnkIn .42s cubic-bezier(.2,.8,.3,1) backwards; }
 .mv-gi-ph { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
-.mv-gi-body { padding:10px 11px 11px; display:flex; flex-direction:column; flex:1; min-width:0; }
+.mv-gi-body { padding:10px 11px 11px; display:flex; flex-direction:column; min-width:0; }
 .mv-gi-body .mn-name { font-size:calc(14px * var(--fs-scale, 1)); line-height:1.3; }
 .mv-clamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 
@@ -1661,25 +1661,20 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
   const hasAr = !!menu?.categories.some((c) => c.nameAr || c.items.some((i) => i.nameAr));
   const [lang, setLang] = useState("en");
   const [active, setActive] = useState(0);
-  const secRefs = useRef([]);
   const chipRefs = useRef([]);
   const ar = lang === "ar" && hasAr;
   const grid = profile.menuLayout === "grid";
   const r = RADII.find((x) => x.id === appearance.radius)?.v ?? 16;
   const card = linkStyleFor(theme, { ...appearance, buttonStyle: appearance.buttonStyle === "solid" ? "soft" : appearance.buttonStyle });
   const cur = ar && (profile.menuCurrency || "EGP") === "EGP" ? "ج.م" : (profile.menuCurrency || "EGP");
-  const darkUi = isLightColor(theme.text);
-  const barBg = darkUi ? "rgba(10,10,14,.55)" : "rgba(255,255,255,.72)";
 
-  /* Highlight the category currently on screen. */
+  /* Replays the banner animation each time a category is opened. */
+  const [bannerOn, setBannerOn] = useState(false);
   useEffect(() => {
-    if (!menu) return;
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) setActive(Number(e.target.dataset.i)); });
-    }, { rootMargin: "-35% 0px -55% 0px" });
-    secRefs.current.forEach((el) => el && io.observe(el));
-    return () => io.disconnect();
-  }, [menu]);
+    setBannerOn(false);
+    const t = setTimeout(() => setBannerOn(true), 40);
+    return () => clearTimeout(t);
+  }, [active, menu]);
 
   /* Keep the active chip visible in the chip row. */
   useEffect(() => {
@@ -1688,21 +1683,16 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
     if (chip && row) row.scrollTo({ left: chip.offsetLeft - row.clientWidth / 2 + chip.clientWidth / 2, behavior: "smooth" });
   }, [active]);
 
-  const jump = (i) => {
-    const el = secRefs.current[i];
-    if (!el) return;
+  const pick = (i) => {
+    setActive(i);
     const sc = scrollerRef?.current;
-    if (sc && sc.scrollHeight > sc.clientHeight + 4) {
-      const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 104;
-      sc.scrollTo({ top, behavior: "smooth" });
-    } else {
-      scrollToTarget(el, -110);
-    }
+    if (sc && sc.scrollHeight > sc.clientHeight + 4) sc.scrollTo({ top: 0, behavior: "smooth" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
     <div className="mv" dir={ar ? "rtl" : "ltr"}>
-      <div className="mv-bar" style={{ background: barBg }}>
+      <div className="mv-bar">
         <div className="mv-top">
           <button type="button" className="mv-ic" aria-label={ar ? "رجوع" : "Back"} onClick={onClose} style={{ color: theme.text, borderColor: theme.border }}>
             <span style={{ display: "flex", transform: ar ? "scaleX(-1)" : "none" }}>{I.back}</span>
@@ -1725,7 +1715,7 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
                 aria-selected={active === i}
                 className="mn-tab"
                 style={{ borderRadius: r, ...(active === i ? { background: theme.accent, color: /^#/.test(theme.accent) ? pickContrast(theme.accent) : theme.cardText, borderColor: "transparent" } : { borderColor: theme.border, color: theme.text }) }}
-                onClick={() => jump(i)}
+                onClick={() => pick(i)}
               >
                 {(ar && c.nameAr) || c.name}
               </button>
@@ -1739,11 +1729,11 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
         <div style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "40px 0" }}>The menu is unavailable right now.</div>
       )}
 
-      {menu?.categories.map((c, ci) => {
+      {menu?.categories.filter((_, ci) => ci === Math.min(active, menu.categories.length - 1)).map((c) => {
         const bg = categoryPhoto(profile, c);
         return (
-          <section key={c.name} className="mv-sec" data-i={ci} ref={(el) => (secRefs.current[ci] = el)}>
-            <div className={"mv-ban" + (active === ci ? " on" : "") + (bg ? "" : " plain")} style={{ borderRadius: Math.max(r === 999 ? 22 : r, 8), ...(bg ? {} : { background: theme.card, border: `1px solid ${theme.border}`, color: theme.cardText }) }}>
+          <section key={c.name} className="mv-sec">
+            <div className={"mv-ban" + (bannerOn ? " on" : "") + (bg ? "" : " plain")} style={{ borderRadius: Math.max(r === 999 ? 22 : r, 8), ...(bg ? {} : { background: theme.card, border: `1px solid ${theme.border}`, color: theme.cardText }) }}>
               {bg && <div className="mv-ban-img" style={{ backgroundImage: `url(${bg})` }} />}
               <div className="mv-ban-txt">
                 <h3>{(ar && c.nameAr) || c.name}</h3>
