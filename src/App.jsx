@@ -273,6 +273,7 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 .mv-col { display:flex; flex-direction:column; gap:10px; min-width:0; }
 .mv { position:relative; isolation:isolate; min-height:100%; }
 .mv-bg { position:sticky; top:0; height:100vh; margin-bottom:-100vh; z-index:-1; overflow:hidden; pointer-events:none; }
+.mv-bg.fixed { position:fixed; inset:0; height:auto; margin:0; }
 .mv-bg-img { position:absolute; inset:0; background-size:cover; background-position:center; animation: bgIn .7s ease; }
 @keyframes bgIn { from { opacity:0; transform:scale(1.06); } }
 .mv-has-bg .mv-bar, .mv-has-bg .mv-bar .mv-ic, .mv-has-bg .mv-bar .mn-lang { color:#fff !important; }
@@ -1406,7 +1407,7 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
   if (hasMenu && menuOpen) {
     return (
       <div className="pf pf-menu" ref={rootRef} data-lenis-prevent={interactive ? undefined : ""} style={pfStyle}>
-        <MenuView profile={profile} theme={theme} appearance={appearance} scrollerRef={rootRef} onClose={closeMenu} />
+        <MenuView profile={profile} theme={theme} appearance={appearance} scrollerRef={rootRef} onClose={closeMenu} fixedBg={interactive} />
         <div className="pf-foot"><span className="pf-foot-badge">Powered by Tap-it</span></div>
       </div>
     );
@@ -1533,11 +1534,12 @@ function sheetCsvUrl(raw) {
     const gid = u.searchParams.get("gid");
     return `https://docs.google.com${base}?output=csv${gid ? "&gid=" + gid : ""}`;
   }
-  // Shared: /spreadsheets/d/<id>/edit#gid=0  → export?format=csv
+  // Shared ("Anyone with the link can view"): /spreadsheets/d/<id>/edit#gid=0
+  // → Google's live query endpoint. Updates within seconds, no 5-minute cache.
   const m = u.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
   if (m) {
     const gid = (u.hash.match(/gid=(\d+)/) || [])[1] || u.searchParams.get("gid");
-    return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv${gid ? "&gid=" + gid : ""}`;
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv&headers=1${gid ? "&gid=" + gid : ""}`;
   }
   return null;
 }
@@ -1622,12 +1624,12 @@ function useMenu(sheetUrl, reloadKey = 0) {
     if (!csv) { setState({ loading: false, menu: null, error: sheetUrl ? "That isn't a Google Sheets link." : null }); return; }
     let alive = true;
     const hit = menuCache.get(csv);
-    if (hit && !reloadKey && Date.now() - hit.t < 60_000) { setState({ loading: false, menu: hit.menu, error: null }); return; }
+    if (hit && !reloadKey && Date.now() - hit.t < 10_000) { setState({ loading: false, menu: hit.menu, error: null }); return; }
     setState((s) => ({ ...s, loading: true, error: null }));
-    fetch(csv + (reloadKey ? "&_=" + Date.now() : ""))
-      .then((r) => { if (!r.ok) throw new Error("Google didn't share the sheet. Publish it to the web (File → Share → Publish to web)."); return r.text(); })
+    fetch(csv + "&_=" + Date.now(), { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("Google didn't share the sheet. Click Share → General access → Anyone with the link → Viewer."); return r.text(); })
       .then((text) => {
-        if (/^\s*<!doctype html|<html/i.test(text)) throw new Error("The sheet isn't public yet. Use File → Share → Publish to web → CSV.");
+        if (/^\s*<!doctype html|<html/i.test(text)) throw new Error("The sheet isn't shared yet. Click Share → General access → Anyone with the link → Viewer.");
         const menu = menuFromCsv(text);
         menuCache.set(csv, { t: Date.now(), menu });
         if (alive) setState({ loading: false, menu, error: null });
@@ -1684,7 +1686,7 @@ function MenuButton({ theme, appearance, onOpen }) {
 }
 
 /** Full-page menu: sticky header + category chips, a banner per category, list or 2-up grid. */
-function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
+function MenuView({ profile, theme, appearance, scrollerRef, onClose, fixedBg = false }) {
   const live = useMenu(profile.menuDemo ? "" : profile.menuSheetUrl);
   const menu = profile.menuDemo || live.menu;
   const loading = !profile.menuDemo && live.loading;
@@ -1726,7 +1728,7 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
   return (
     <div className={"mv" + (pageBg ? " mv-has-bg" : "")} dir={ar ? "rtl" : "ltr"}>
       {pageBg && (
-        <div className="mv-bg" aria-hidden="true">
+        <div className={"mv-bg" + (fixedBg ? " fixed" : "")} aria-hidden="true">
           <div key={pageBg} className="mv-bg-img" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.62)), url(${pageBg})` }} />
         </div>
       )}
@@ -4066,7 +4068,7 @@ function MenuPage() {
       <div className="row-b">
         <div>
           <h1 className="h-page">Menu</h1>
-          <p className="mut sm" style={{ marginTop: 6 }}>Your menu lives in a Google Sheet. Change a price there and your page updates within about 5 minutes.</p>
+          <p className="mut sm" style={{ marginTop: 6 }}>Your menu lives in a Google Sheet. Change a price there and your page updates within seconds.</p>
         </div>
         <Button onClick={save} loading={busy} disabled={!dirty}>{dirty ? "Save" : "Saved"}</Button>
       </div>
@@ -4091,13 +4093,14 @@ function MenuPage() {
           </div>
 
           <div className="card pad-l">
-            <h3 style={{ fontSize: 17 }}>2. Publish it and paste the link</h3>
+            <h3 style={{ fontSize: 17 }}>2. Share it and paste the link</h3>
             <p className="mut sm" style={{ marginTop: 6 }}>
-              In Google Sheets: <b>File → Share → Publish to web</b> → pick the menu tab → <b>Comma-separated values (.csv)</b> → <b>Publish</b>. Copy the link it gives you.
+              In Google Sheets click <b>Share</b> → under <b>General access</b> choose <b>Anyone with the link</b> → <b>Viewer</b> → <b>Copy link</b>. Open the menu tab first so the link points to it. Changes show on your menu within seconds.
             </p>
+            <p className="mut tiny" style={{ marginTop: 6 }}>Only keep menu items in this file — not costs or private notes. Viewers can't edit it.</p>
             <div className="stack" style={{ "--gap": "14px", marginTop: 16 }}>
               <Field label="Google Sheet link" id="mn-url" error={url && !loading ? error : null}>
-                <TextInput id="mn-url" value={url} placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" spellCheck="false" onChange={(e) => setUrl(e.target.value)} />
+                <TextInput id="mn-url" value={url} placeholder="https://docs.google.com/spreadsheets/d/…/edit?usp=sharing" spellCheck="false" onChange={(e) => setUrl(e.target.value)} />
               </Field>
               <Field label="Currency" id="mn-cur" hint="Shown after every price, e.g. EGP, SAR, $.">
                 <TextInput id="mn-cur" value={currency} maxLength={8} style={{ maxWidth: 140 }} onChange={(e) => setCurrency(e.target.value)} />
@@ -4108,6 +4111,9 @@ function MenuPage() {
                     : menu ? <span className="pill pill-ok">{I.check} {menu.count} item{menu.count === 1 ? "" : "s"} in {menu.categories.length} categor{menu.categories.length === 1 ? "y" : "ies"}</span>
                     : null}
                   <Button variant="q" size="sm" onClick={() => setReload((n) => n + 1)}>Refresh now</Button>
+                  {/\/spreadsheets\/d\/e\//.test(url) && (
+                    <span className="pill pill-w">This is a "Publish to web" link, so changes take ~5 minutes. Use the Share link for instant updates.</span>
+                  )}
                 </div>
               )}
             </div>
