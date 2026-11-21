@@ -252,6 +252,30 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .mn-price { font-weight:800; font-size:calc(14px * var(--fs-scale, 1)); white-space:nowrap; }
 p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top:3px; line-height:1.45; }
 
+.mn-btn { padding:17px 18px; font-size:calc(16px * var(--fs-scale, 1)); font-weight:800; box-shadow:0 10px 24px -14px rgba(0,0,0,.55); }
+.pf-menu { padding:0 0 40px; }
+.mv-bar { position:sticky; top:0; z-index:5; padding:12px 14px 8px; backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%); }
+.mv-top { display:flex; align-items:center; gap:10px; }
+.mv-ic { width:38px; height:38px; flex:none; display:flex; align-items:center; justify-content:center; background:none; border:1px solid; border-radius:999px; cursor:pointer; }
+.mv-name { flex:1; text-align:center; font-family:var(--disp); font-weight:800; font-size:calc(16px * var(--fs-scale, 1)); }
+.mv-bar .mn-tabs { padding:10px 0 2px; }
+.mv-sec { padding:18px 14px 4px; scroll-margin-top:110px; }
+.mv-ban { position:relative; height:118px; overflow:hidden; display:flex; align-items:flex-end; color:#fff; isolation:isolate; }
+.mv-ban.plain { height:auto; min-height:64px; }
+.mv-ban-img { position:absolute; inset:0; z-index:-1; background-size:cover; background-position:center; transform:scale(1.12); transition:transform 1.6s cubic-bezier(.2,.8,.3,1), filter .8s ease; filter:saturate(.85) brightness(.9); }
+.mv-ban-img::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.05) 20%, rgba(0,0,0,.65) 100%); }
+.mv-ban.on .mv-ban-img { transform:scale(1); filter:saturate(1.05) brightness(1); }
+.mv-ban-txt { padding:14px 16px; display:flex; align-items:baseline; justify-content:space-between; gap:10px; width:100%; }
+.mv-ban-txt h3 { font-size:calc(21px * var(--fs-scale, 1)); margin:0; letter-spacing:-.02em; transform:translateY(6px); opacity:.85; transition:transform .6s cubic-bezier(.2,.8,.3,1), opacity .6s ease; }
+.mv-ban.on .mv-ban-txt h3 { transform:none; opacity:1; }
+.mv-ban-txt span { font-size:12px; font-weight:700; opacity:.85; white-space:nowrap; }
+.mv-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.mv-gi { display:flex; flex-direction:column; animation: lnkIn .42s cubic-bezier(.2,.8,.3,1) backwards; }
+.mv-gi-ph { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
+.mv-gi-body { padding:10px 11px 11px; display:flex; flex-direction:column; flex:1; min-width:0; }
+.mv-gi-body .mn-name { font-size:calc(14px * var(--fs-scale, 1)); line-height:1.3; }
+.mv-clamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+
 /* --- features --- */
 .sec { padding:88px 0; }
 .sec-h { max-width:38ch; }
@@ -316,6 +340,7 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 .plan-ban.bad { background:var(--bad-bg); }
 @media (max-width: 720px) { .price-grid { grid-template-columns:1fr; } }
 
+.mp-cat { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:13px; margin-bottom:8px; background-color:var(--tint); background-size:cover; background-position:center; min-height:52px; }
 .mp-th { width:44px; height:44px; border-radius:10px; background:var(--tint); color:var(--mut); display:flex; align-items:center; justify-content:center; overflow:hidden; flex:none; }
 .mp-th img { width:100%; height:100%; object-fit:cover; }
 ol.mn-steps { margin:12px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
@@ -695,6 +720,7 @@ function recFromRow(row, links, analytics, email) {
       menuSheetUrl: row.menu_sheet_url || "",
       menuCurrency: row.menu_currency || "EGP",
       menuPhotos: row.menu_photos || {},
+      menuLayout: row.menu_layout || "list",
     },
     links: links || [],
     analytics: analytics || { views: [], clicks: [] },
@@ -800,6 +826,7 @@ const db = {
         menu_sheet_url: profile.menuSheetUrl || null,
         menu_currency: clean(profile.menuCurrency, 8) || "EGP",
         menu_photos: profile.menuPhotos || {},
+        menu_layout: profile.menuLayout === "grid" ? "grid" : "list",
         onboarded: !!account.onboarded,
       })
       .eq("id", account.id);
@@ -1340,9 +1367,45 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
   const appearance = { buttonStyle: profile.buttonStyle || "soft", radius: profile.radius || "round" };
   const font = FONTS.find((f) => f.id === (profile.font || "manrope"))?.stack || FONTS[0].stack;
   const live = links.filter((l) => l.active !== false);
+  const hasMenu = profile.accountType === "business" && !!(profile.menuSheetUrl || profile.menuDemo);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pushed = useRef(false);
+
+  const toTop = () => {
+    if (rootRef.current) rootRef.current.scrollTop = 0;
+    if (interactive) jumpTop();
+  };
+  const openMenu = () => {
+    setMenuOpen(true);
+    /* On the real page, the phone's back button closes the menu. */
+    if (interactive) { window.history.pushState({ tapitMenu: 1 }, ""); pushed.current = true; }
+    requestAnimationFrame(toTop);
+  };
+  const closeMenu = () => {
+    if (pushed.current) { pushed.current = false; window.history.back(); return; }
+    setMenuOpen(false);
+    requestAnimationFrame(toTop);
+  };
+  useEffect(() => {
+    if (!interactive || !menuOpen) return;
+    const onPop = () => { pushed.current = false; setMenuOpen(false); requestAnimationFrame(toTop); };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [interactive, menuOpen]);
+
+  const pfStyle = { background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font, "--fs-scale": (profile.fontScale || 100) / 100 };
+
+  if (hasMenu && menuOpen) {
+    return (
+      <div className="pf pf-menu" ref={rootRef} data-lenis-prevent={interactive ? undefined : ""} style={pfStyle}>
+        <MenuView profile={profile} theme={theme} appearance={appearance} scrollerRef={rootRef} onClose={closeMenu} />
+        <div className="pf-foot"><span className="pf-foot-badge">Powered by Tap-it</span></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="pf" ref={rootRef} data-lenis-prevent={interactive ? undefined : ""} style={{ background: fillParentBg ? "none" : theme.bg, backgroundSize: theme.bgSize || "auto", backgroundPosition: theme.bgPosition || "center", backgroundRepeat: "no-repeat", color: theme.text, fontFamily: font, "--fs-scale": (profile.fontScale || 100) / 100 }}>
+    <div className="pf" ref={rootRef} data-lenis-prevent={interactive ? undefined : ""} style={pfStyle}>
       {profile.cover && (
         <div className="pf-cover" style={{ backgroundImage: `url(${profile.cover})`, border: `1px solid ${theme.border}`, filter: profile.coverBlur ? "blur(6px)" : "none" }} />
       )}
@@ -1386,8 +1449,14 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
         </div>
       )}
 
-      <div className="pf-links">
-        {live.length === 0 && (
+      {hasMenu && (
+        <div style={{ marginTop: 24 }}>
+          <MenuButton theme={theme} appearance={appearance} onOpen={openMenu} />
+        </div>
+      )}
+
+      <div className="pf-links" style={hasMenu ? { marginTop: 13 } : undefined}>
+        {live.length === 0 && !hasMenu && (
           <div style={{ textAlign: "center", opacity: 0.55, fontSize: 13.5, padding: "26px 0" }}>
             No links yet. Add one and it shows up here instantly.
           </div>
@@ -1417,8 +1486,6 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
         )}
       </div>
 
-      {profile.accountType === "business" && <MenuBlock profile={profile} theme={theme} appearance={appearance} />}
-
       <div className="pf-foot">
         <span className="pf-foot-badge">Powered by Tap-it</span>
       </div>
@@ -1434,11 +1501,11 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
    "Available" = no / 0 / false hides the item.                            */
 
 const MENU_TEMPLATE_CSV = [
-  "Category,Category AR,Item,Item AR,Price,Description,Description AR,Photo,Available",
-  "Hot drinks,مشروبات ساخنة,Espresso,إسبريسو,45,Double shot,شوت مزدوج,,yes",
-  "Hot drinks,مشروبات ساخنة,Cappuccino,كابتشينو,60,,,,yes",
-  "Breakfast,فطار,Cheese croissant,كرواسون جبنة,55,Baked fresh every morning,مخبوز طازة كل يوم,,yes",
-  "Desserts,حلويات,Molten cake,مولتن كيك,85,Served with vanilla ice cream,مع آيس كريم فانيليا,,no",
+  "Category,Category AR,Item,Item AR,Price,Description,Description AR,Photo,Available,Category Photo",
+  "Hot drinks,مشروبات ساخنة,Espresso,إسبريسو,45,Double shot,شوت مزدوج,,yes,",
+  "Hot drinks,مشروبات ساخنة,Cappuccino,كابتشينو,60,,,,yes,",
+  "Breakfast,فطار,Cheese croissant,كرواسون جبنة,55,Baked fresh every morning,مخبوز طازة كل يوم,,yes,",
+  "Desserts,حلويات,Molten cake,مولتن كيك,85,Served with vanilla ice cream,مع آيس كريم فانيليا,,no,",
 ].join("\n");
 
 /* Uploaded item photos are matched to sheet rows by item name. */
@@ -1496,6 +1563,7 @@ const MENU_COLS = {
   desc: ["description", "desc", "details"],
   descAr: ["descriptionar", "descriptionarabic", "descar"],
   photo: ["photo", "image", "photolink", "imagelink", "صورة"],
+  catPhoto: ["categoryphoto", "categoryimage", "sectionphoto", "categorybackground"],
   available: ["available", "instock", "show", "متاح"],
 };
 
@@ -1518,7 +1586,9 @@ function menuFromCsv(text) {
     const avail = get(r, "available").toLowerCase();
     if (["no", "0", "false", "x", "لا", "hide"].includes(avail)) return;
     const cName = get(r, "category") || "Menu";
-    if (!byName[cName]) { byName[cName] = { name: cName, nameAr: get(r, "categoryAr"), items: [] }; cats.push(byName[cName]); }
+    if (!byName[cName]) { byName[cName] = { name: cName, nameAr: get(r, "categoryAr"), photo: "", items: [] }; cats.push(byName[cName]); }
+    const cp = get(r, "catPhoto");
+    if (!byName[cName].photo && /^https:\/\//i.test(cp)) byName[cName].photo = cp;
     const photo = get(r, "photo");
     byName[cName].items.push({
       name, nameAr: get(r, "itemAr"),
@@ -1557,65 +1627,160 @@ function useMenu(sheetUrl, reloadKey = 0) {
   return state;
 }
 
-function MenuBlock({ profile, theme, appearance }) {
+/* Category banner photo: sheet column first, then the dashboard upload. */
+const catPhotoKey = (name) => "cat:" + photoKey(name);
+function categoryPhoto(profile, c) {
+  return c.photo || profile.menuPhotos?.[catPhotoKey(c.name)] || "";
+}
+function itemPhoto(profile, it) {
+  return it.photo || profile.menuPhotos?.[photoKey(it.name)] || "";
+}
+
+/** The big "View menu" button on the profile. */
+function MenuButton({ theme, appearance, onOpen }) {
+  const r = RADII.find((x) => x.id === appearance.radius)?.v ?? 16;
+  return (
+    <button
+      type="button"
+      className="pf-lnk mn-btn"
+      style={{ borderRadius: r, background: theme.accent, color: /^#/.test(theme.accent) ? pickContrast(theme.accent) : theme.cardText, border: "1px solid transparent" }}
+      onClick={onOpen}
+    >
+      <span style={{ display: "flex" }}>{I.menu}</span>
+      <span className="grow" style={{ textAlign: "left" }}>View menu <span style={{ opacity: 0.7, fontWeight: 600 }}>· المنيو</span></span>
+      <span style={{ display: "flex" }}>{I.fwd}</span>
+    </button>
+  );
+}
+
+/** Full-page menu: sticky header + category chips, a banner per category, list or 2-up grid. */
+function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
   const live = useMenu(profile.menuDemo ? "" : profile.menuSheetUrl);
   const menu = profile.menuDemo || live.menu;
   const loading = !profile.menuDemo && live.loading;
-  const error = !profile.menuDemo && live.error;
   const hasAr = !!menu?.categories.some((c) => c.nameAr || c.items.some((i) => i.nameAr));
   const [lang, setLang] = useState("en");
-  const [open, setOpen] = useState(0);
+  const [active, setActive] = useState(0);
+  const secRefs = useRef([]);
+  const chipRefs = useRef([]);
   const ar = lang === "ar" && hasAr;
+  const grid = profile.menuLayout === "grid";
   const r = RADII.find((x) => x.id === appearance.radius)?.v ?? 16;
   const card = linkStyleFor(theme, { ...appearance, buttonStyle: appearance.buttonStyle === "solid" ? "soft" : appearance.buttonStyle });
-  const cur = profile.menuCurrency || "EGP";
+  const cur = ar && (profile.menuCurrency || "EGP") === "EGP" ? "ج.م" : (profile.menuCurrency || "EGP");
+  const darkUi = isLightColor(theme.text);
+  const barBg = darkUi ? "rgba(10,10,14,.55)" : "rgba(255,255,255,.72)";
 
-  if (!profile.menuSheetUrl && !profile.menuDemo) return null;
-  if (loading) return <div className="mn" style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "22px 0" }}>Loading menu…</div>;
-  if (error || !menu) return <div className="mn" style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "22px 0" }}>The menu is unavailable right now.</div>;
-  if (!menu.count) return null;
+  /* Highlight the category currently on screen. */
+  useEffect(() => {
+    if (!menu) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) setActive(Number(e.target.dataset.i)); });
+    }, { rootMargin: "-35% 0px -55% 0px" });
+    secRefs.current.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, [menu]);
+
+  /* Keep the active chip visible in the chip row. */
+  useEffect(() => {
+    const chip = chipRefs.current[active];
+    const row = chip?.parentElement;
+    if (chip && row) row.scrollTo({ left: chip.offsetLeft - row.clientWidth / 2 + chip.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
+
+  const jump = (i) => {
+    const el = secRefs.current[i];
+    if (!el) return;
+    const sc = scrollerRef?.current;
+    if (sc && sc.scrollHeight > sc.clientHeight + 4) {
+      const top = el.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 104;
+      sc.scrollTo({ top, behavior: "smooth" });
+    } else {
+      scrollToTarget(el, -110);
+    }
+  };
 
   return (
-    <div className="mn" dir={ar ? "rtl" : "ltr"}>
-      <div className="mn-head">
-        <span className="mn-title">{ar ? "المنيو" : "Menu"}</span>
-        {hasAr && (
-          <button type="button" className="mn-lang" style={{ borderColor: theme.border, color: theme.text }} onClick={() => setLang(ar ? "en" : "ar")}>
-            {ar ? "English" : "عربي"}
+    <div className="mv" dir={ar ? "rtl" : "ltr"}>
+      <div className="mv-bar" style={{ background: barBg }}>
+        <div className="mv-top">
+          <button type="button" className="mv-ic" aria-label={ar ? "رجوع" : "Back"} onClick={onClose} style={{ color: theme.text, borderColor: theme.border }}>
+            <span style={{ display: "flex", transform: ar ? "scaleX(-1)" : "none" }}>{I.back}</span>
           </button>
+          <span className="mv-name trunc">{profile.displayName || (ar ? "المنيو" : "Menu")}</span>
+          {hasAr ? (
+            <button type="button" className="mn-lang" style={{ borderColor: theme.border, color: theme.text }} onClick={() => setLang(ar ? "en" : "ar")}>
+              {ar ? "English" : "عربي"}
+            </button>
+          ) : <span style={{ width: 38 }} />}
+        </div>
+        {menu?.categories.length > 1 && (
+          <div className="mn-tabs" role="tablist">
+            {menu.categories.map((c, i) => (
+              <button
+                key={c.name}
+                ref={(el) => (chipRefs.current[i] = el)}
+                type="button"
+                role="tab"
+                aria-selected={active === i}
+                className="mn-tab"
+                style={{ borderRadius: r, ...(active === i ? { background: theme.accent, color: /^#/.test(theme.accent) ? pickContrast(theme.accent) : theme.cardText, borderColor: "transparent" } : { borderColor: theme.border, color: theme.text }) }}
+                onClick={() => jump(i)}
+              >
+                {(ar && c.nameAr) || c.name}
+              </button>
+            ))}
+          </div>
         )}
       </div>
-      <div className="mn-tabs" role="tablist">
-        {menu.categories.map((c, i) => (
-          <button
-            key={c.name}
-            type="button"
-            role="tab"
-            aria-selected={open === i}
-            className="mn-tab"
-            style={{ borderRadius: r, ...(open === i ? { background: theme.accent, color: pickContrast(/^#/.test(theme.accent) ? theme.accent : "#111111"), borderColor: "transparent" } : { borderColor: theme.border, color: theme.text }) }}
-            onClick={() => setOpen(i)}
-          >
-            {(ar && c.nameAr) || c.name}
-          </button>
-        ))}
-      </div>
-      <div className="mn-list">
-        {menu.categories[Math.min(open, menu.categories.length - 1)].items.map((it, i) => (
-          <div key={it.name + i} className="mn-item" style={{ ...card, animationDelay: `${i * 35}ms` }}>
-            {(it.photo || profile.menuPhotos?.[photoKey(it.name)]) && (
-              <img src={it.photo || profile.menuPhotos[photoKey(it.name)]} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />
-            )}
-            <div className="grow" style={{ minWidth: 0 }}>
-              <div className="mn-row">
-                <span className="mn-name">{(ar && it.nameAr) || it.name}</span>
-                {it.price && <span className="mn-price">{it.price} {ar && cur === "EGP" ? "ج.م" : cur}</span>}
+
+      {loading && <div style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "40px 0" }}>{ar ? "جاري التحميل…" : "Loading menu…"}</div>}
+      {!loading && (!menu || !menu.count) && (
+        <div style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "40px 0" }}>The menu is unavailable right now.</div>
+      )}
+
+      {menu?.categories.map((c, ci) => {
+        const bg = categoryPhoto(profile, c);
+        return (
+          <section key={c.name} className="mv-sec" data-i={ci} ref={(el) => (secRefs.current[ci] = el)}>
+            <div className={"mv-ban" + (active === ci ? " on" : "") + (bg ? "" : " plain")} style={{ borderRadius: Math.max(r === 999 ? 22 : r, 8), ...(bg ? {} : { background: theme.card, border: `1px solid ${theme.border}`, color: theme.cardText }) }}>
+              {bg && <div className="mv-ban-img" style={{ backgroundImage: `url(${bg})` }} />}
+              <div className="mv-ban-txt">
+                <h3>{(ar && c.nameAr) || c.name}</h3>
+                <span>{c.items.length} {ar ? "صنف" : c.items.length === 1 ? "item" : "items"}</span>
               </div>
-              {((ar && it.descAr) || it.desc) && <p className="mn-desc">{(ar && it.descAr) || it.desc}</p>}
             </div>
-          </div>
-        ))}
-      </div>
+            <div className={grid ? "mv-grid" : "mn-list"}>
+              {c.items.map((it, i) => {
+                const ph = itemPhoto(profile, it);
+                const name = (ar && it.nameAr) || it.name;
+                const desc = (ar && it.descAr) || it.desc;
+                return grid ? (
+                  <div key={it.name + i} className="mv-gi" style={{ ...card, padding: 0, overflow: "hidden", animationDelay: `${(i % 6) * 40}ms` }}>
+                    {ph ? <img src={ph} alt="" className="mv-gi-ph" loading="lazy" /> : null}
+                    <div className="mv-gi-body">
+                      <span className="mn-name">{name}</span>
+                      {desc && <p className="mn-desc mv-clamp">{desc}</p>}
+                      {it.price && <span className="mn-price" style={{ marginTop: "auto", paddingTop: 6 }}>{it.price} {cur}</span>}
+                    </div>
+                  </div>
+                ) : (
+                  <div key={it.name + i} className="mn-item" style={{ ...card, animationDelay: `${(i % 8) * 35}ms` }}>
+                    {ph && <img src={ph} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />}
+                    <div className="grow" style={{ minWidth: 0 }}>
+                      <div className="mn-row">
+                        <span className="mn-name">{name}</span>
+                        {it.price && <span className="mn-price">{it.price} {cur}</span>}
+                      </div>
+                      {desc && <p className="mn-desc">{desc}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -3784,6 +3949,7 @@ function MenuPage() {
   const toast = useToast();
   const [url, setUrl] = useState(user.profile.menuSheetUrl || "");
   const [currency, setCurrency] = useState(user.profile.menuCurrency || "EGP");
+  const [layout, setLayout] = useState(user.profile.menuLayout || "list");
   const [reload, setReload] = useState(0);
   const [busy, setBusy] = useState(false);
   const isBiz = user.profile.accountType === "business";
@@ -3792,13 +3958,13 @@ function MenuPage() {
   const [photoBusy, setPhotoBusy] = useState(null);
   const photos = user.profile.menuPhotos || {};
 
-  const uploadPhoto = async (itemName, file) => {
+  /* key = photoKey(item) for items, catPhotoKey(category) for category banners */
+  const uploadPhoto = async (itemName, file, key = photoKey(itemName), aspect = 1) => {
     if (!file) return;
     if (!/^image\//.test(file.type)) { toast("Pick an image file.", "bad"); return; }
     if (file.size > 10 * 1024 * 1024) { toast("Images need to be under 10MB.", "bad"); return; }
-    const cropped = await requestCrop(file, { aspect: 1, shape: "rect", maxOutput: 600 });
+    const cropped = await requestCrop(file, { aspect, shape: "rect", maxOutput: aspect > 1 ? 1000 : 600 });
     if (!cropped) return;
-    const key = photoKey(itemName);
     setPhotoBusy(key);
     try {
       const blob = await (await fetch(cropped)).blob();
@@ -3820,14 +3986,13 @@ function MenuPage() {
     if (m) supabase.storage.from("menu-photos").remove([decodeURIComponent(m[1])]);
   };
 
-  const removePhoto = async (itemName) => {
-    const key = photoKey(itemName);
+  const removePhoto = async (itemName, key = photoKey(itemName)) => {
     const old = photos[key];
     await patchUser((rec) => { const next = { ...(rec.profile.menuPhotos || {}) }; delete next[key]; rec.profile.menuPhotos = next; });
     if (old) removeStored(old);
     toast("Photo removed.");
   };
-  const dirty = url.trim() !== (user.profile.menuSheetUrl || "") || currency !== (user.profile.menuCurrency || "EGP");
+  const dirty = url.trim() !== (user.profile.menuSheetUrl || "") || currency !== (user.profile.menuCurrency || "EGP") || layout !== (user.profile.menuLayout || "list");
 
   const save = async () => {
     if (url.trim() && !sheetCsvUrl(url)) { toast("Paste a Google Sheets link.", "bad"); return; }
@@ -3836,6 +4001,7 @@ function MenuPage() {
       await patchUser((rec) => {
         rec.profile.menuSheetUrl = url.trim();
         rec.profile.menuCurrency = clean(currency, 8) || "EGP";
+        rec.profile.menuLayout = layout;
         rec.profile.accountType = "business";
       });
       toast(url.trim() ? "Menu connected. Edit the sheet and your page follows." : "Menu removed from your page.");
@@ -3851,7 +4017,7 @@ function MenuPage() {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
-  const previewUser = { ...user, profile: { ...user.profile, accountType: "business", menuSheetUrl: url.trim(), menuCurrency: currency } };
+  const previewUser = { ...user, profile: { ...user.profile, accountType: "business", menuSheetUrl: url.trim(), menuCurrency: currency, menuLayout: layout } };
 
   return (
     <div className="stack" style={{ "--gap": "22px" }}>
@@ -3908,14 +4074,35 @@ function MenuPage() {
 
           <div className="card pad-l">
             <h3 style={{ fontSize: 17 }}>3. Add photos (optional)</h3>
-            <p className="mut sm" style={{ marginTop: 6 }}>Tap an item to upload a photo from your phone or computer. Photos stay matched to the item name, so keep names the same in your sheet.</p>
+            <p className="mut sm" style={{ marginTop: 6 }}>Give each category a background (e.g. a coffee photo for Hot drinks) and add item photos. Photos stay matched to the names, so keep names the same in your sheet.</p>
             {!menu || !menu.count ? (
               <p className="mut sm" style={{ marginTop: 14 }}>Connect your sheet first and your items show up here.</p>
             ) : (
               <div className="stack" style={{ "--gap": "16px", marginTop: 16 }}>
                 {menu.categories.map((c) => (
                   <div key={c.name}>
-                    <div className="tiny mut" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>{c.name}</div>
+                    {(() => {
+                      const ck = catPhotoKey(c.name);
+                      const cbg = c.photo || photos[ck];
+                      return (
+                        <div className="mp-cat" style={cbg ? { backgroundImage: `linear-gradient(90deg, rgba(0,0,0,.65), rgba(0,0,0,.15)), url(${cbg})`, color: "#fff", borderColor: "transparent" } : undefined}>
+                          <span className="grow" style={{ fontWeight: 800 }}>{c.name}</span>
+                          {c.photo ? (
+                            <span className="tiny" style={{ opacity: 0.8 }}>Background from sheet</span>
+                          ) : (
+                            <>
+                              <label className="btn btn-g btn-sm" style={{ cursor: "pointer" }}>
+                                {photoBusy === ck ? <span className="spin" aria-hidden="true" /> : null}
+                                {photos[ck] ? "Change background" : "Add background"}
+                                <input type="file" accept="image/*" style={{ display: "none" }} disabled={!!photoBusy}
+                                  onChange={(e) => { uploadPhoto(c.name, e.target.files?.[0], ck, 2.6); e.target.value = ""; }} />
+                              </label>
+                              {photos[ck] && <button className="icobtn danger" style={cbg ? { color: "#fff" } : undefined} aria-label={`Remove ${c.name} background`} onClick={() => removePhoto(c.name, ck)}>{I.trash}</button>}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <div className="stack" style={{ "--gap": "8px" }}>
                       {c.items.map((it) => {
                         const key = photoKey(it.name);
@@ -3949,6 +4136,15 @@ function MenuPage() {
 
           <div className="card pad-l">
             <h3 style={{ fontSize: 17 }}>4. Make it yours</h3>
+            <div style={{ marginTop: 14 }}>
+              <Chooser
+                label="Menu layout"
+                options={[{ id: "list", name: "1 per row" }, { id: "grid", name: "2 per row" }]}
+                value={layout}
+                onChange={setLayout}
+              />
+              <p className="mut tiny" style={{ marginTop: 6 }}>2 per row shows more items on screen and works best with photos.</p>
+            </div>
             <p className="mut sm" style={{ marginTop: 6 }}>Background, colors, fonts and button shapes for the menu come from <b>Appearance</b>. Add your Google review link, Instagram and WhatsApp in <b>Links</b>.</p>
           </div>
         </div>
