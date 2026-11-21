@@ -316,6 +316,8 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 .plan-ban.bad { background:var(--bad-bg); }
 @media (max-width: 720px) { .price-grid { grid-template-columns:1fr; } }
 
+.mp-th { width:44px; height:44px; border-radius:10px; background:var(--tint); color:var(--mut); display:flex; align-items:center; justify-content:center; overflow:hidden; flex:none; }
+.mp-th img { width:100%; height:100%; object-fit:cover; }
 ol.mn-steps { margin:12px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
 
 /* --- footer --- */
@@ -692,6 +694,7 @@ function recFromRow(row, links, analytics, email) {
       accountType: row.account_type || "personal",
       menuSheetUrl: row.menu_sheet_url || "",
       menuCurrency: row.menu_currency || "EGP",
+      menuPhotos: row.menu_photos || {},
     },
     links: links || [],
     analytics: analytics || { views: [], clicks: [] },
@@ -796,6 +799,7 @@ const db = {
         account_type: profile.accountType === "business" ? "business" : "personal",
         menu_sheet_url: profile.menuSheetUrl || null,
         menu_currency: clean(profile.menuCurrency, 8) || "EGP",
+        menu_photos: profile.menuPhotos || {},
         onboarded: !!account.onboarded,
       })
       .eq("id", account.id);
@@ -1437,6 +1441,9 @@ const MENU_TEMPLATE_CSV = [
   "Desserts,حلويات,Molten cake,مولتن كيك,85,Served with vanilla ice cream,مع آيس كريم فانيليا,,no",
 ].join("\n");
 
+/* Uploaded item photos are matched to sheet rows by item name. */
+const photoKey = (name) => String(name || "").toLowerCase().replace(/\s+/g, " ").trim();
+
 /* Turns any Google Sheets link into a CSV export link. Works for
    "Publish to web" links (recommended) and normal share links. */
 function sheetCsvUrl(raw) {
@@ -1596,7 +1603,9 @@ function MenuBlock({ profile, theme, appearance }) {
       <div className="mn-list">
         {menu.categories[Math.min(open, menu.categories.length - 1)].items.map((it, i) => (
           <div key={it.name + i} className="mn-item" style={{ ...card, animationDelay: `${i * 35}ms` }}>
-            {it.photo && <img src={it.photo} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />}
+            {(it.photo || profile.menuPhotos?.[photoKey(it.name)]) && (
+              <img src={it.photo || profile.menuPhotos[photoKey(it.name)]} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />
+            )}
             <div className="grow" style={{ minWidth: 0 }}>
               <div className="mn-row">
                 <span className="mn-name">{(ar && it.nameAr) || it.name}</span>
@@ -3779,6 +3788,45 @@ function MenuPage() {
   const [busy, setBusy] = useState(false);
   const isBiz = user.profile.accountType === "business";
   const { loading, menu, error } = useMenu(url, reload);
+  const { request: requestCrop, modal: cropModal } = useImageCropper();
+  const [photoBusy, setPhotoBusy] = useState(null);
+  const photos = user.profile.menuPhotos || {};
+
+  const uploadPhoto = async (itemName, file) => {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast("Pick an image file.", "bad"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast("Images need to be under 10MB.", "bad"); return; }
+    const cropped = await requestCrop(file, { aspect: 1, shape: "rect", maxOutput: 600 });
+    if (!cropped) return;
+    const key = photoKey(itemName);
+    setPhotoBusy(key);
+    try {
+      const blob = await (await fetch(cropped)).blob();
+      const path = `${user.account.id}/${uid()}.jpg`;
+      const { error: upErr } = await supabase.storage.from("menu-photos").upload(path, blob, { contentType: "image/jpeg", upsert: true });
+      if (upErr) throw new Error("Couldn't upload the photo: " + upErr.message);
+      const { data } = supabase.storage.from("menu-photos").getPublicUrl(path);
+      const old = photos[key];
+      await patchUser((rec) => { rec.profile.menuPhotos = { ...(rec.profile.menuPhotos || {}), [key]: data.publicUrl }; });
+      if (old) removeStored(old);
+      toast(`Photo added to ${itemName}.`);
+    } catch (e) {
+      toast(e.message || "Couldn't upload the photo.", "bad");
+    } finally { setPhotoBusy(null); }
+  };
+
+  const removeStored = (publicUrl) => {
+    const m = String(publicUrl).match(/\/menu-photos\/(.+)$/);
+    if (m) supabase.storage.from("menu-photos").remove([decodeURIComponent(m[1])]);
+  };
+
+  const removePhoto = async (itemName) => {
+    const key = photoKey(itemName);
+    const old = photos[key];
+    await patchUser((rec) => { const next = { ...(rec.profile.menuPhotos || {}) }; delete next[key]; rec.profile.menuPhotos = next; });
+    if (old) removeStored(old);
+    toast("Photo removed.");
+  };
   const dirty = url.trim() !== (user.profile.menuSheetUrl || "") || currency !== (user.profile.menuCurrency || "EGP");
 
   const save = async () => {
@@ -3807,6 +3855,7 @@ function MenuPage() {
 
   return (
     <div className="stack" style={{ "--gap": "22px" }}>
+      {cropModal}
       <div className="row-b">
         <div>
           <h1 className="h-page">Menu</h1>
@@ -3829,7 +3878,7 @@ function MenuPage() {
               <li>Download the template and open it in Google Sheets (<b>File → Import → Upload</b>).</li>
               <li>Fill one row per item. Leave Arabic columns empty if you don't need them.</li>
               <li>Type <b>no</b> in <b>Available</b> to hide a sold-out item.</li>
-              <li>For photos, paste a public image link (https://…) in <b>Photo</b>.</li>
+              <li>Photos: skip the Photo column and upload them below once the sheet is connected.</li>
             </ol>
             <Button variant="g" size="sm" style={{ marginTop: 14 }} onClick={downloadTemplate}>Download template</Button>
           </div>
@@ -3858,7 +3907,48 @@ function MenuPage() {
           </div>
 
           <div className="card pad-l">
-            <h3 style={{ fontSize: 17 }}>3. Make it yours</h3>
+            <h3 style={{ fontSize: 17 }}>3. Add photos (optional)</h3>
+            <p className="mut sm" style={{ marginTop: 6 }}>Tap an item to upload a photo from your phone or computer. Photos stay matched to the item name, so keep names the same in your sheet.</p>
+            {!menu || !menu.count ? (
+              <p className="mut sm" style={{ marginTop: 14 }}>Connect your sheet first and your items show up here.</p>
+            ) : (
+              <div className="stack" style={{ "--gap": "16px", marginTop: 16 }}>
+                {menu.categories.map((c) => (
+                  <div key={c.name}>
+                    <div className="tiny mut" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 8 }}>{c.name}</div>
+                    <div className="stack" style={{ "--gap": "8px" }}>
+                      {c.items.map((it) => {
+                        const key = photoKey(it.name);
+                        const src = it.photo || photos[key];
+                        return (
+                          <div key={key} className="row" style={{ border: "1px solid var(--line)", borderRadius: 13, padding: "8px 10px", gap: 12 }}>
+                            <div className="mp-th">{src ? <img src={src} alt="" /> : I.plus}</div>
+                            <span className="grow sm trunc" style={{ fontWeight: 600 }}>{it.name}</span>
+                            {it.photo ? (
+                              <span className="mut tiny">From sheet</span>
+                            ) : (
+                              <>
+                                <label className="btn btn-g btn-sm" style={{ cursor: "pointer" }}>
+                                  {photoBusy === key ? <span className="spin" aria-hidden="true" /> : null}
+                                  {photos[key] ? "Replace" : "Add photo"}
+                                  <input type="file" accept="image/*" style={{ display: "none" }} disabled={!!photoBusy}
+                                    onChange={(e) => { uploadPhoto(it.name, e.target.files?.[0]); e.target.value = ""; }} />
+                                </label>
+                                {photos[key] && <button className="icobtn danger" aria-label={`Remove photo of ${it.name}`} onClick={() => removePhoto(it.name)}>{I.trash}</button>}
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card pad-l">
+            <h3 style={{ fontSize: 17 }}>4. Make it yours</h3>
             <p className="mut sm" style={{ marginTop: 6 }}>Background, colors, fonts and button shapes for the menu come from <b>Appearance</b>. Add your Google review link, Instagram and WhatsApp in <b>Links</b>.</p>
           </div>
         </div>
