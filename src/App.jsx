@@ -236,6 +236,22 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .pf-foot { text-align:center; margin-top:32px; font-size:12px; }
 .pf-foot-badge { display:inline-block; padding:6px 13px; border-radius:999px; background:rgba(0,0,0,.55); color:#fff; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
 
+/* --- restaurant menu (inside profile canvas) --- */
+.mn { margin-top:30px; }
+.mn-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.mn-title { font-family:var(--disp); font-weight:800; font-size:calc(18px * var(--fs-scale, 1)); }
+.mn-lang { background:none; border:1px solid; border-radius:999px; padding:5px 12px; font-size:12.5px; font-weight:700; cursor:pointer; }
+.mn-tabs { display:flex; gap:8px; overflow-x:auto; padding:12px 0 4px; scrollbar-width:none; }
+.mn-tabs::-webkit-scrollbar { display:none; }
+.mn-tab { flex:none; border:1px solid; background:none; padding:7px 14px; font-size:calc(13px * var(--fs-scale, 1)); font-weight:700; cursor:pointer; white-space:nowrap; }
+.mn-list { display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+.mn-item { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; animation: lnkIn .42s cubic-bezier(.2,.8,.3,1) backwards; }
+.mn-ph { width:64px; height:64px; object-fit:cover; flex:none; }
+.mn-row { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+.mn-name { font-weight:700; font-size:calc(15px * var(--fs-scale, 1)); }
+.mn-price { font-weight:800; font-size:calc(14px * var(--fs-scale, 1)); white-space:nowrap; }
+p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top:3px; line-height:1.45; }
+
 /* --- features --- */
 .sec { padding:88px 0; }
 .sec-h { max-width:38ch; }
@@ -299,6 +315,8 @@ p.pf-bio { text-align:center; font-size:calc(14px * var(--fs-scale, 1)); margin-
 .plan-ban { display:flex; align-items:center; gap:12px; flex-wrap:wrap; background:var(--warn-bg); color:var(--ink); border:1px solid var(--line); border-radius:var(--r-m); padding:10px 14px; margin-bottom:20px; }
 .plan-ban.bad { background:var(--bad-bg); }
 @media (max-width: 720px) { .price-grid { grid-template-columns:1fr; } }
+
+ol.mn-steps { margin:12px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
 
 /* --- footer --- */
 .foot { border-top:1px solid var(--line); padding:54px 0 34px; margin-top:10px; }
@@ -574,6 +592,8 @@ const I = {
   up: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 15 6-6 6 6" /></svg>,
   down: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>,
   google: <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2a5.3 5.3 0 0 1-2.3 3.5v2.9h3.7c2.2-2 3.4-5 3.4-8.6Z" /><path fill="#34A853" d="M12 23.5c3.1 0 5.7-1 7.6-2.8l-3.7-2.9c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v3C3.7 21 7.6 23.5 12 23.5Z" /><path fill="#FBBC05" d="M5.6 14.2a6.9 6.9 0 0 1 0-4.4v-3H1.8a11.5 11.5 0 0 0 0 10.4Z" /><path fill="#EA4335" d="M12 5.1c1.7 0 3.2.6 4.4 1.7l3.3-3.3A11.1 11.1 0 0 0 12 .5C7.6.5 3.7 3 1.8 6.8l3.8 3c.9-2.8 3.4-4.7 6.4-4.7Z" /></svg>,
+  cup: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h13v5a6 6 0 0 1-6 6h-1a6 6 0 0 1-6-6Z" /><path d="M17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 2.5v2.5M11.5 2.5v2.5" /></svg>,
+  menu: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>,
   bird: <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 19h18" /><circle cx="12" cy="10" r="4" /><path d="M12 14v5" /></svg>,
 };
 
@@ -581,6 +601,7 @@ const SOCIALS = {
   instagram: { label: "Instagram", base: "instagram.com/", path: "M12 8.2A3.8 3.8 0 1 0 15.8 12 3.8 3.8 0 0 0 12 8.2Zm0 6.2A2.4 2.4 0 1 1 14.4 12 2.4 2.4 0 0 1 12 14.4ZM17 3H7a4 4 0 0 0-4 4v10a4 4 0 0 0 4 4h10a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4Zm2.6 14a2.6 2.6 0 0 1-2.6 2.6H7A2.6 2.6 0 0 1 4.4 17V7A2.6 2.6 0 0 1 7 4.4h10A2.6 2.6 0 0 1 19.6 7Zm-3-9.6a.95.95 0 1 0 .95.95.95.95 0 0 0-.95-.95Z" },
   x: { label: "X", base: "x.com/", path: "M17.3 3h3.2l-7 8 8.2 10h-6.4l-5-6.1L4.5 21H1.3l7.5-8.6L1 3h6.6l4.5 5.6Zm-1.1 16h1.8L7.9 4.8H6Z" },
   youtube: { label: "YouTube", base: "youtube.com/@", path: "M21.6 7.2a2.6 2.6 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.6 2.6 0 0 0-1.8 1.8A27 27 0 0 0 2 12a27 27 0 0 0 .4 4.8 2.6 2.6 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.6 2.6 0 0 0 1.8-1.8A27 27 0 0 0 22 12a27 27 0 0 0-.4-4.8ZM10 15.1V8.9l5.3 3.1Z" },
+  review: { label: "Google review", base: "", path: "M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8Z" },
   tiktok: { label: "TikTok", base: "tiktok.com/@", path: "M16.5 2h-3v13.2a2.7 2.7 0 1 1-2.2-2.7v-3a5.7 5.7 0 1 0 5.2 5.7V9a7 7 0 0 0 4.1 1.3V7.3a4.1 4.1 0 0 1-4.1-4.1Z" },
   linkedin: { label: "LinkedIn", base: "linkedin.com/in/", path: "M6.2 21H3V9h3.2ZM4.6 7.5A1.9 1.9 0 1 1 6.5 5.6a1.9 1.9 0 0 1-1.9 1.9ZM21 21h-3.2v-6.1c0-1.6-.6-2.5-1.9-2.5a2 2 0 0 0-1.9 1.4 2.6 2.6 0 0 0-.1.9V21H10.7V9h3.2v1.7a3.6 3.6 0 0 1 3.2-1.9c2.2 0 3.9 1.5 3.9 4.7Z" },
   github: { label: "GitHub", base: "github.com/", path: "M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.3-3.4-1.3a2.7 2.7 0 0 0-1.1-1.5c-.9-.6.1-.6.1-.6a2.1 2.1 0 0 1 1.6 1 2.2 2.2 0 0 0 3 .9 2.2 2.2 0 0 1 .6-1.4c-2.2-.2-4.6-1.1-4.6-5a3.9 3.9 0 0 1 1-2.7 3.6 3.6 0 0 1 .1-2.7s.9-.3 2.8 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.8-1 2.8-1a3.6 3.6 0 0 1 .1 2.7 3.9 3.9 0 0 1 1 2.7c0 3.9-2.4 4.8-4.6 5a2.5 2.5 0 0 1 .7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2Z" },
@@ -668,6 +689,9 @@ function recFromRow(row, links, analytics, email) {
       radius: row.radius || "round",
       font: row.font || "manrope",
       socials: row.socials || [],
+      accountType: row.account_type || "personal",
+      menuSheetUrl: row.menu_sheet_url || "",
+      menuCurrency: row.menu_currency || "EGP",
     },
     links: links || [],
     analytics: analytics || { views: [], clicks: [] },
@@ -769,6 +793,9 @@ const db = {
         radius: profile.radius || "round",
         font: profile.font || "manrope",
         socials: profile.socials || [],
+        account_type: profile.accountType === "business" ? "business" : "personal",
+        menu_sheet_url: profile.menuSheetUrl || null,
+        menu_currency: clean(profile.menuCurrency, 8) || "EGP",
         onboarded: !!account.onboarded,
       })
       .eq("id", account.id);
@@ -865,6 +892,7 @@ const RESERVED = new Set([
   "login", "signup", "signin", "register", "dashboard", "onboarding", "settings", "admin",
   "about", "privacy", "terms", "pricing", "features", "help", "support", "api", "app",
   "forgot-password", "reset-password", "tap-it", "www", "explore", "new", "u", "me",
+  "business", "restaurants", "menu",
 ]);
 
 const USERNAME_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
@@ -1385,8 +1413,199 @@ function ProfileCanvas({ profile, links, interactive = false, onLinkClick, usern
         )}
       </div>
 
+      {profile.accountType === "business" && <MenuBlock profile={profile} theme={theme} appearance={appearance} />}
+
       <div className="pf-foot">
         <span className="pf-foot-badge">Powered by Tap-it</span>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------- 6b. RESTAURANT MENUS
+   Restaurants keep their menu in a Google Sheet and paste its link in the
+   dashboard. Columns (header names, any order, case-insensitive):
+     Category | Category AR | Item | Item AR | Price | Description |
+     Description AR | Photo | Available
+   "Available" = no / 0 / false hides the item.                            */
+
+const MENU_TEMPLATE_CSV = [
+  "Category,Category AR,Item,Item AR,Price,Description,Description AR,Photo,Available",
+  "Hot drinks,مشروبات ساخنة,Espresso,إسبريسو,45,Double shot,شوت مزدوج,,yes",
+  "Hot drinks,مشروبات ساخنة,Cappuccino,كابتشينو,60,,,,yes",
+  "Breakfast,فطار,Cheese croissant,كرواسون جبنة,55,Baked fresh every morning,مخبوز طازة كل يوم,,yes",
+  "Desserts,حلويات,Molten cake,مولتن كيك,85,Served with vanilla ice cream,مع آيس كريم فانيليا,,no",
+].join("\n");
+
+/* Turns any Google Sheets link into a CSV export link. Works for
+   "Publish to web" links (recommended) and normal share links. */
+function sheetCsvUrl(raw) {
+  const v = String(raw || "").trim();
+  if (!v) return null;
+  let u;
+  try { u = new URL(v); } catch { return null; }
+  if (u.hostname !== "docs.google.com") return null;
+  // Published: /spreadsheets/d/e/<id>/pub?...  → force output=csv
+  if (/\/spreadsheets\/d\/e\//.test(u.pathname)) {
+    const base = u.pathname.replace(/\/(pubhtml|pub)(\/.*)?$/, "/pub");
+    const gid = u.searchParams.get("gid");
+    return `https://docs.google.com${base}?output=csv${gid ? "&gid=" + gid : ""}`;
+  }
+  // Shared: /spreadsheets/d/<id>/edit#gid=0  → export?format=csv
+  const m = u.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (m) {
+    const gid = (u.hash.match(/gid=(\d+)/) || [])[1] || u.searchParams.get("gid");
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv${gid ? "&gid=" + gid : ""}`;
+  }
+  return null;
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); rows.push(row); row = []; cell = "";
+    } else cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((x) => String(x).trim() !== ""));
+}
+
+const MENU_COLS = {
+  category: ["category", "section", "القسم"],
+  categoryAr: ["categoryar", "categoryarabic", "sectionar"],
+  item: ["item", "name", "itemname", "الصنف"],
+  itemAr: ["itemar", "itemarabic", "namear"],
+  price: ["price", "السعر"],
+  desc: ["description", "desc", "details"],
+  descAr: ["descriptionar", "descriptionarabic", "descar"],
+  photo: ["photo", "image", "photolink", "imagelink", "صورة"],
+  available: ["available", "instock", "show", "متاح"],
+};
+
+/* → { categories: [{ name, nameAr, items: [...] }], count } */
+function menuFromCsv(text) {
+  const rows = parseCsv(text);
+  if (rows.length < 2) return { categories: [], count: 0 };
+  const norm = (h) => String(h).toLowerCase().replace(/[\s_()\-]/g, "");
+  const head = rows[0].map(norm);
+  const idx = {};
+  Object.entries(MENU_COLS).forEach(([k, names]) => { idx[k] = head.findIndex((h) => names.includes(h)); });
+  if (idx.item < 0) throw new Error("Couldn't find an 'Item' column in the first row of the sheet.");
+  const get = (r, k) => (idx[k] >= 0 ? clean(r[idx[k]], 300) : "");
+  const cats = [];
+  const byName = {};
+  let count = 0;
+  rows.slice(1).forEach((r) => {
+    const name = get(r, "item");
+    if (!name) return;
+    const avail = get(r, "available").toLowerCase();
+    if (["no", "0", "false", "x", "لا", "hide"].includes(avail)) return;
+    const cName = get(r, "category") || "Menu";
+    if (!byName[cName]) { byName[cName] = { name: cName, nameAr: get(r, "categoryAr"), items: [] }; cats.push(byName[cName]); }
+    const photo = get(r, "photo");
+    byName[cName].items.push({
+      name, nameAr: get(r, "itemAr"),
+      price: get(r, "price"),
+      desc: get(r, "desc"), descAr: get(r, "descAr"),
+      photo: /^https:\/\//i.test(photo) ? photo : "",
+    });
+    count++;
+  });
+  return { categories: cats, count };
+}
+
+/* Fetches + parses a menu sheet. Shared cache so the dashboard preview and
+   editor don't hit Google twice. Google refreshes published sheets ~every 5 min. */
+const menuCache = new Map();
+function useMenu(sheetUrl, reloadKey = 0) {
+  const csv = sheetCsvUrl(sheetUrl);
+  const [state, setState] = useState({ loading: !!csv, menu: null, error: null });
+  useEffect(() => {
+    if (!csv) { setState({ loading: false, menu: null, error: sheetUrl ? "That isn't a Google Sheets link." : null }); return; }
+    let alive = true;
+    const hit = menuCache.get(csv);
+    if (hit && !reloadKey && Date.now() - hit.t < 60_000) { setState({ loading: false, menu: hit.menu, error: null }); return; }
+    setState((s) => ({ ...s, loading: true, error: null }));
+    fetch(csv + (reloadKey ? "&_=" + Date.now() : ""))
+      .then((r) => { if (!r.ok) throw new Error("Google didn't share the sheet. Publish it to the web (File → Share → Publish to web)."); return r.text(); })
+      .then((text) => {
+        if (/^\s*<!doctype html|<html/i.test(text)) throw new Error("The sheet isn't public yet. Use File → Share → Publish to web → CSV.");
+        const menu = menuFromCsv(text);
+        menuCache.set(csv, { t: Date.now(), menu });
+        if (alive) setState({ loading: false, menu, error: null });
+      })
+      .catch((e) => alive && setState({ loading: false, menu: null, error: e.message || "Couldn't load the menu." }));
+    return () => { alive = false; };
+  }, [csv, reloadKey]);
+  return state;
+}
+
+function MenuBlock({ profile, theme, appearance }) {
+  const live = useMenu(profile.menuDemo ? "" : profile.menuSheetUrl);
+  const menu = profile.menuDemo || live.menu;
+  const loading = !profile.menuDemo && live.loading;
+  const error = !profile.menuDemo && live.error;
+  const hasAr = !!menu?.categories.some((c) => c.nameAr || c.items.some((i) => i.nameAr));
+  const [lang, setLang] = useState("en");
+  const [open, setOpen] = useState(0);
+  const ar = lang === "ar" && hasAr;
+  const r = RADII.find((x) => x.id === appearance.radius)?.v ?? 16;
+  const card = linkStyleFor(theme, { ...appearance, buttonStyle: appearance.buttonStyle === "solid" ? "soft" : appearance.buttonStyle });
+  const cur = profile.menuCurrency || "EGP";
+
+  if (!profile.menuSheetUrl && !profile.menuDemo) return null;
+  if (loading) return <div className="mn" style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "22px 0" }}>Loading menu…</div>;
+  if (error || !menu) return <div className="mn" style={{ opacity: 0.6, textAlign: "center", fontSize: 13.5, padding: "22px 0" }}>The menu is unavailable right now.</div>;
+  if (!menu.count) return null;
+
+  return (
+    <div className="mn" dir={ar ? "rtl" : "ltr"}>
+      <div className="mn-head">
+        <span className="mn-title">{ar ? "المنيو" : "Menu"}</span>
+        {hasAr && (
+          <button type="button" className="mn-lang" style={{ borderColor: theme.border, color: theme.text }} onClick={() => setLang(ar ? "en" : "ar")}>
+            {ar ? "English" : "عربي"}
+          </button>
+        )}
+      </div>
+      <div className="mn-tabs" role="tablist">
+        {menu.categories.map((c, i) => (
+          <button
+            key={c.name}
+            type="button"
+            role="tab"
+            aria-selected={open === i}
+            className="mn-tab"
+            style={{ borderRadius: r, ...(open === i ? { background: theme.accent, color: pickContrast(/^#/.test(theme.accent) ? theme.accent : "#111111"), borderColor: "transparent" } : { borderColor: theme.border, color: theme.text }) }}
+            onClick={() => setOpen(i)}
+          >
+            {(ar && c.nameAr) || c.name}
+          </button>
+        ))}
+      </div>
+      <div className="mn-list">
+        {menu.categories[Math.min(open, menu.categories.length - 1)].items.map((it, i) => (
+          <div key={it.name + i} className="mn-item" style={{ ...card, animationDelay: `${i * 35}ms` }}>
+            {it.photo && <img src={it.photo} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />}
+            <div className="grow" style={{ minWidth: 0 }}>
+              <div className="mn-row">
+                <span className="mn-name">{(ar && it.nameAr) || it.name}</span>
+                {it.price && <span className="mn-price">{it.price} {ar && cur === "EGP" ? "ج.م" : cur}</span>}
+              </div>
+              {((ar && it.descAr) || it.desc) && <p className="mn-desc">{(ar && it.descAr) || it.desc}</p>}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1710,7 +1929,8 @@ function Nav({ go, user }) {
   }, []);
   const jump = (id) => {
     setOpen(false);
-    scrollToTarget(id);
+    if (document.getElementById(id)) scrollToTarget(id);
+    else go("/");
   };
   return (
     <header className={"nav" + (stuck ? " stuck" : "")} ref={navRef}>
@@ -1720,6 +1940,7 @@ function Nav({ go, user }) {
           <button className="nav-lnk" onClick={() => jump("features")}>Features</button>
           <button className="nav-lnk" onClick={() => jump("how")}>How it works</button>
           <button className="nav-lnk" onClick={() => jump("pricing")}>Pricing</button>
+          <button className="nav-lnk" onClick={() => go("/business")}>For restaurants</button>
         </nav>
         <div className="grow" />
         {user ? (
@@ -1748,6 +1969,7 @@ function Nav({ go, user }) {
             <button className="nav-lnk" onClick={() => jump("features")}>Features</button>
             <button className="nav-lnk" onClick={() => jump("how")}>How it works</button>
             <button className="nav-lnk" onClick={() => jump("pricing")}>Pricing</button>
+            <button className="nav-lnk" onClick={() => { setOpen(false); go("/business"); }}>For restaurants</button>
             {!user && <button className="nav-lnk" onClick={() => { setOpen(false); go("/login"); }}>Log in</button>}
             {user && <button className="nav-lnk" onClick={() => { setOpen(false); go("/login"); }}>Switch account</button>}
           </div>
@@ -1939,6 +2161,147 @@ function Landing({ go, user }) {
   );
 }
 
+/* ------------------------------------------------- 8b. RESTAURANTS LANDING */
+
+const DEMO_MENU = {
+  count: 7,
+  categories: [
+    { name: "Coffee", nameAr: "قهوة", items: [
+      { name: "Flat white", nameAr: "فلات وايت", price: "75", desc: "Double ristretto, silky milk", descAr: "ريستريتو مزدوج وحليب" },
+      { name: "Spanish latte", nameAr: "سبانش لاتيه", price: "85", desc: "Condensed milk, espresso", descAr: "حليب مكثف وإسبريسو" },
+      { name: "V60 pour-over", nameAr: "في ٦٠", price: "90", desc: "Ethiopian single origin", descAr: "بن إثيوبي" },
+    ] },
+    { name: "Breakfast", nameAr: "فطار", items: [
+      { name: "Shakshuka", nameAr: "شكشوكة", price: "120", desc: "Baked eggs, tomato, feta", descAr: "بيض وطماطم وجبنة فيتا" },
+      { name: "Avocado toast", nameAr: "توست أفوكادو", price: "135", desc: "Sourdough, chili flakes", descAr: "خبز ساوردو وشطة" },
+    ] },
+    { name: "Desserts", nameAr: "حلويات", items: [
+      { name: "Basque cheesecake", nameAr: "تشيز كيك باسك", price: "110", desc: "", descAr: "" },
+      { name: "Molten cake", nameAr: "مولتن كيك", price: "95", desc: "With vanilla ice cream", descAr: "مع آيس كريم" },
+    ] },
+  ],
+};
+const BIZ_PROFILE = {
+  displayName: "Bean & Co. Café",
+  bio: "Specialty coffee & breakfast\nZamalek · 8am – 12am",
+  avatar: null,
+  socials: [{ platform: "instagram", url: "#" }, { platform: "tiktok", url: "#" }, { platform: "whatsapp", url: "#" }, { platform: "gmaps", url: "#" }],
+  theme: "paper", buttonStyle: "soft", radius: "round", font: "manrope",
+  accountType: "business", menuDemo: DEMO_MENU, menuCurrency: "EGP",
+};
+const BIZ_LINKS = [
+  { id: "b1", title: "Rate us on Google", url: "#", active: true, icon: "review", badge: "★ 4.8" },
+  { id: "b2", title: "Order on WhatsApp", url: "#", active: true, icon: "whatsapp" },
+];
+const BIZ_FEATURES = [
+  { icon: I.menu, t: "Your menu, live", d: "Customers tap the sticker on their table and your full menu opens. No app, no PDF, no QR camera fiddling." },
+  { icon: I.layers, t: "Edit prices in Google Sheets", d: "Change a price or hide a sold-out item in your sheet. Your menu updates by itself within minutes." },
+  { icon: I.sparkle, t: "More Google reviews", d: "A 'Rate us on Google' button sits right on the menu, where happy customers already are." },
+  { icon: I.share, t: "Socials, WhatsApp, location", d: "Instagram, TikTok, WhatsApp orders, Google Maps and InstaPay, all one tap away." },
+  { icon: I.palette, t: "Looks like your place", d: "Your logo, colors, fonts and background photo. Switch themes for Ramadan or a new season in seconds." },
+  { icon: I.chart, t: "See what people open", d: "Count how many guests scan each day and which links they tap." },
+];
+const BIZ_STEPS = [
+  { n: "01", t: "Order your stickers", d: "Tell us how many tables you have. Every sticker comes with a token that makes your page free." },
+  { n: "02", t: "Connect your menu sheet", d: "Copy our Google Sheets template, fill in your items and prices, and paste the link in your dashboard." },
+  { n: "03", t: "Stick, tap, done", d: "Put a sticker on each table. Guests tap with their phone and your menu opens instantly." },
+];
+
+function BusinessLanding({ go, user }) {
+  const heroRef = useHeroMotion();
+  const start = () => { pendingType.set("business"); go(user ? "/dashboard/menu" : "/signup"); };
+  return (
+    <>
+      <ScrollProgress />
+      <Nav go={go} user={user} />
+      <main>
+        <section className="hero" ref={heroRef}>
+          <div className="hero-glow" />
+          <div className="hero-dots" aria-hidden="true" />
+          <div className="wrap hero-grid">
+            <div>
+              <span className="pill pill-n">For restaurants & cafés</span>
+              <TextReveal as="h1" mode="mask" onScroll={false} delay={0.15} className="h1" style={{ marginTop: 18 }} text="Tap the table. See the menu." />
+              <p className="lede">
+                NFC stickers for every table that open your menu, Google review link and socials in one tap. Update prices from a Google Sheet, in Arabic and English.
+              </p>
+              <div className="hero-cta">
+                <Magnet><Button size="lg" onClick={start}>Create your menu page</Button></Magnet>
+                <Magnet><Button variant="g" size="lg" onClick={() => scrollToTarget("biz-how")}>How it works</Button></Magnet>
+              </div>
+              <p className="hero-note">
+                <span style={{ color: "var(--ok)", display: "flex" }}>{I.check}</span>
+                Free with Tap-it table stickers
+              </p>
+            </div>
+            <div className="phone-stage">
+              <div className="float" style={{ position: "relative" }}>
+                <Phone><ProfileCanvas profile={BIZ_PROFILE} links={BIZ_LINKS} /></Phone>
+                <div className="chip-float hide-sm" style={{ top: 90, left: -60 }}>
+                  <span style={{ color: "var(--p)", display: "flex" }}>{I.menu}</span> Prices from Google Sheets
+                </div>
+                <div className="chip-float hide-sm" style={{ bottom: 120, right: -40 }}>عربي / English</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="sec" id="biz-features">
+          <div className="wrap">
+            <div className="sec-h">
+              <TextReveal as="h2" text="Everything a table needs" />
+              <Reveal as="p" delay={0.15} y={18}>One sticker replaces the printed menu, the review card and the Instagram sign.</Reveal>
+            </div>
+            <Reveal className="f-grid" selector=".f-card" stagger={0.09} onPointerMove={spotlightMove}>
+              {BIZ_FEATURES.map((f) => (
+                <div className="f-card" key={f.t}>
+                  <div className="f-ico">{f.icon}</div>
+                  <h3>{f.t}</h3>
+                  <p>{f.d}</p>
+                </div>
+              ))}
+            </Reveal>
+          </div>
+        </section>
+
+        <section className="sec" id="biz-how" style={{ paddingTop: 0 }}>
+          <div className="wrap">
+            <div className="sec-h">
+              <TextReveal as="h2" text="Live on your tables in a day" />
+              <Reveal as="p" delay={0.15} y={18}>No designer, no printing a new menu every time prices change.</Reveal>
+            </div>
+            <Reveal className="steps" selector=".step" stagger={0.16} bar>
+              {BIZ_STEPS.map((s) => (
+                <div className="step" key={s.n}>
+                  <div className="step-n">{s.n}</div>
+                  <h3>{s.t}</h3>
+                  <p>{s.d}</p>
+                </div>
+              ))}
+            </Reveal>
+          </div>
+        </section>
+
+        <Pricing go={go} user={user} />
+
+        <section className="sec">
+          <div className="wrap">
+            <Reveal className="cta-band" y={40} scale={0.96}>
+              <TextReveal as="h2" text="Ready for your tables?" />
+              <p>Set up your menu page now, then order stickers for every table.</p>
+              <div className="row" style={{ marginTop: 26, justifyContent: "center", flexWrap: "wrap", gap: 12 }}>
+                <Magnet><Button size="lg" onClick={start}>Create your menu page</Button></Magnet>
+                <Magnet><Button variant="g" size="lg" onClick={() => go("/")}>Personal pages</Button></Magnet>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      </main>
+      <Footer go={go} />
+    </>
+  );
+}
+
 function Pricing({ go, user }) {
   const toast = useToast();
   const [yearly, setYearly] = useState(false);
@@ -1997,7 +2360,7 @@ function Pricing({ go, user }) {
           <div className="price-c price-c-dark">
             <div className="row-b" style={{ flexWrap: "wrap" }}>
               <h3>Card owner</h3>
-              <span className="pill" style={{ background: "#fff", color: "#111" }}>With any Tap-it card</span>
+              <span className="pill" style={{ background: "#fff", color: "#111" }}>With any Tap-it card or sticker</span>
             </div>
             <div className="price-n">Free <span>forever</span></div>
             <ul>
@@ -2130,6 +2493,7 @@ function Footer({ go }) {
         <p className="mut sm" style={{ marginTop: 12, maxWidth: "32ch" }}>
           One page for everything you make. Built for people who publish in more than one place.
         </p>
+        <button className="btn btn-q btn-sm" style={{ marginTop: 10 }} onClick={() => go("/business")}>Tap-it for restaurants & cafés →</button>
       </div>
       <div className="wrap mut tiny" style={{ marginTop: 34, textAlign: "center" }}>
         © {new Date().getFullYear()} Tap-it.
@@ -2491,6 +2855,22 @@ const STARTER_LINKS = [
   { key: "email", title: "Email me", icon: "email", url: "mailto:hello@example.com" },
 ];
 
+const BUSINESS_STARTER_LINKS = [
+  { key: "review", title: "Rate us on Google", icon: "review", url: "https://g.page/r/" },
+  { key: "gmaps", title: "Find us on Google Maps", icon: "gmaps", url: "https://maps.google.com/" },
+  { key: "instagram", title: "Instagram", icon: "instagram", url: "https://instagram.com/" },
+  { key: "tiktok", title: "TikTok", icon: "tiktok", url: "https://tiktok.com/" },
+  { key: "whatsapp", title: "Order on WhatsApp", icon: "whatsapp", url: "https://wa.me/20" },
+  { key: "instapay", title: "Pay with InstaPay", icon: "instapay", url: "https://ipn.eg/" },
+];
+
+/* Set by the restaurants landing page so onboarding starts as a business. */
+const pendingType = {
+  get() { try { return sessionStorage.getItem("tapit-pending-type") || ""; } catch { return ""; } },
+  set(v) { try { sessionStorage.setItem("tapit-pending-type", v); } catch {} },
+  clear() { try { sessionStorage.removeItem("tapit-pending-type"); } catch {} },
+};
+
 function Onboarding({ go }) {
   const { user, patchUser, redeemToken } = useAuth();
   const toast = useToast();
@@ -2505,15 +2885,20 @@ function Onboarding({ go }) {
   const [displayName, setDisplayName] = useState(user.profile.displayName || "");
   const [bio, setBio] = useState(user.profile.bio || "");
   const [avatar, setAvatar] = useState(user.profile.avatar || null);
-  const [picked, setPicked] = useState(["instagram"]);
+  const [accountType, setAccountType] = useState(() =>
+    user.profile.accountType === "business" || pendingType.get() === "business" ? "business" : "personal");
+  const isBiz = accountType === "business";
+  const starters = isBiz ? BUSINESS_STARTER_LINKS : STARTER_LINKS;
+  const [picked, setPicked] = useState(() => (accountType === "business" ? ["review", "instagram"] : ["instagram"]));
+  const chooseType = (t) => { setAccountType(t); setPicked(t === "business" ? ["review", "instagram"] : ["instagram"]); };
   const [theme, setTheme] = useState(user.profile.theme || "dawn");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const { request: requestCrop, modal: cropModal } = useImageCropper();
 
-  const previewProfile = { ...user.profile, displayName: displayName || user.profile.displayName, bio, avatar, theme };
+  const previewProfile = { ...user.profile, displayName: displayName || user.profile.displayName, bio, avatar, theme, accountType };
   const previewLinks = picked.map((k) => {
-    const s = STARTER_LINKS.find((x) => x.key === k);
+    const s = starters.find((x) => x.key === k);
     return { id: k, title: s.title, url: s.url, icon: s.icon, active: true };
   });
 
@@ -2528,7 +2913,7 @@ function Onboarding({ go }) {
   const finish = async () => {
     setBusy(true);
     const links = picked.map((k, i) => {
-      const s = STARTER_LINKS.find((x) => x.key === k);
+      const s = starters.find((x) => x.key === k);
       return { id: uid(), title: s.title, url: s.url, icon: s.icon, active: true, type: "link", order: i, createdAt: Date.now(), clicks: 0 };
     });
     await patchUser((rec) => {
@@ -2536,6 +2921,7 @@ function Onboarding({ go }) {
       rec.profile.bio = cleanMultiline(bio, 160);
       rec.profile.avatar = avatar;
       rec.profile.theme = theme;
+      rec.profile.accountType = accountType;
       rec.links = links;
       rec.account.onboarded = true;
     });
@@ -2546,10 +2932,11 @@ function Onboarding({ go }) {
       if (res.ok) { pendingToken.clear(); toast("Card token redeemed. Your page is free for good."); }
       else toast(`${res.error} You can retry in Settings.`, "bad");
     }
+    pendingType.clear();
     await sleep(320);
     setBusy(false);
-    toast("Your page is live. Share it anywhere.");
-    go("/dashboard", { replace: true });
+    toast(isBiz ? "Your page is live. Next: connect your menu sheet." : "Your page is live. Share it anywhere.");
+    go(isBiz ? "/dashboard/menu" : "/dashboard", { replace: true });
   };
 
   const steps = [
@@ -2558,6 +2945,19 @@ function Onboarding({ go }) {
       sub: "This is the first thing visitors read. You can change it any time.",
       body: (
         <div className="stack" style={{ "--gap": "18px" }}>
+          <div>
+            <div className="fld-lab">This page is for</div>
+            <div className="pick">
+              <button type="button" className="pick-i" aria-pressed={!isBiz} onClick={() => chooseType("personal")}>
+                <span style={{ display: "flex", color: !isBiz ? "var(--p)" : "var(--mut)" }}>{I.id}</span>
+                <span className="grow"><b style={{ display: "block", fontSize: 14.5 }}>Me</b><span className="mut tiny">Personal or creator page</span></span>
+              </button>
+              <button type="button" className="pick-i" aria-pressed={isBiz} onClick={() => chooseType("business")}>
+                <span style={{ display: "flex", color: isBiz ? "var(--p)" : "var(--mut)" }}>{I.cup}</span>
+                <span className="grow"><b style={{ display: "block", fontSize: 14.5 }}>Restaurant or café</b><span className="mut tiny">Menu, reviews and socials</span></span>
+              </button>
+            </div>
+          </div>
           <div className="row" style={{ gap: 16 }}>
             <Avatar src={avatar} name={displayName || user.account.name} size={68} />
             <div className="stack" style={{ "--gap": "6px" }}>
@@ -2568,11 +2968,11 @@ function Onboarding({ go }) {
               {avatar && <button className="btn btn-q btn-sm" onClick={() => setAvatar(null)}>Remove</button>}
             </div>
           </div>
-          <Field label="Display name" id="ob-name" error={err}>
-            <TextInput id="ob-name" value={displayName} maxLength={60} onChange={(e) => { setDisplayName(e.target.value); setErr(null); }} placeholder="Nadia Hassan" error={err} />
+          <Field label={isBiz ? "Restaurant or café name" : "Display name"} id="ob-name" error={err}>
+            <TextInput id="ob-name" value={displayName} maxLength={60} onChange={(e) => { setDisplayName(e.target.value); setErr(null); }} placeholder={isBiz ? "Bean & Co. Café" : "Nadia Hassan"} error={err} />
           </Field>
           <Field label="Bio" id="ob-bio" hint={`${bio.length}/160 characters`}>
-            <textarea id="ob-bio" className="inp" maxLength={160} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Ceramicist in Lisbon. Studio notes and new drops." />
+            <textarea id="ob-bio" className="inp" maxLength={160} value={bio} onChange={(e) => setBio(e.target.value)} placeholder={isBiz ? "Specialty coffee & breakfast · Zamalek · Open 8am–12am" : "Ceramicist in Lisbon. Studio notes and new drops."} />
           </Field>
         </div>
       ),
@@ -2586,7 +2986,7 @@ function Onboarding({ go }) {
       sub: "Pick a few to start with. You'll add the real URLs in a moment.",
       body: (
         <div className="pick">
-          {STARTER_LINKS.map((s) => {
+          {starters.map((s) => {
             const on = picked.includes(s.key);
             return (
               <button
@@ -2829,6 +3229,9 @@ function DashboardShell({ go, route, children }) {
   const section = route.path.replace(/^\/dashboard\/?/, "");
   const publicUrl = `tap-it-nu.vercel.app/#/${user.account.username}`;
   const secRef = useSectionMotion(section);
+  const navItems = user.profile.accountType === "business"
+    ? [NAV_ITEMS[0], NAV_ITEMS[1], { id: "menu", label: "Menu", icon: I.menu }, ...NAV_ITEMS.slice(2)]
+    : NAV_ITEMS;
 
   const copyLink = async () => {
     try {
@@ -2844,7 +3247,7 @@ function DashboardShell({ go, route, children }) {
       <aside className="side">
         <div style={{ padding: "4px 8px 18px" }}><Logo onClick={() => go("/dashboard")} /></div>
         <nav className="stack" style={{ "--gap": "3px" }} aria-label="Dashboard">
-          {NAV_ITEMS.map((n) => {
+          {navItems.map((n) => {
             const href = "/dashboard" + (n.id ? "/" + n.id : "");
             const active = section === n.id;
             return (
@@ -2898,7 +3301,7 @@ function DashboardShell({ go, route, children }) {
         </div>
         <div className="dash-body"><PlanBanner go={go} /><div className="dash-sec" key={section} ref={secRef}>{children}</div></div>
         <nav className="mobile-bar" aria-label="Sections">
-          {NAV_ITEMS.map((n) => (
+          {navItems.map((n) => (
             <button
               key={n.id}
               aria-current={section === n.id ? "page" : undefined}
@@ -3362,6 +3765,105 @@ function LinksPage() {
           "{confirmDel?.title}" comes off your page immediately. Its click history goes with it. You'll get one chance to undo.
         </p>
       </Modal>
+    </div>
+  );
+}
+
+/* --- Menu (restaurants) --- */
+function MenuPage() {
+  const { user, patchUser } = useAuth();
+  const toast = useToast();
+  const [url, setUrl] = useState(user.profile.menuSheetUrl || "");
+  const [currency, setCurrency] = useState(user.profile.menuCurrency || "EGP");
+  const [reload, setReload] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const isBiz = user.profile.accountType === "business";
+  const { loading, menu, error } = useMenu(url, reload);
+  const dirty = url.trim() !== (user.profile.menuSheetUrl || "") || currency !== (user.profile.menuCurrency || "EGP");
+
+  const save = async () => {
+    if (url.trim() && !sheetCsvUrl(url)) { toast("Paste a Google Sheets link.", "bad"); return; }
+    setBusy(true);
+    try {
+      await patchUser((rec) => {
+        rec.profile.menuSheetUrl = url.trim();
+        rec.profile.menuCurrency = clean(currency, 8) || "EGP";
+        rec.profile.accountType = "business";
+      });
+      toast(url.trim() ? "Menu connected. Edit the sheet and your page follows." : "Menu removed from your page.");
+    } finally { setBusy(false); }
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob(["\uFEFF" + MENU_TEMPLATE_CSV], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tap-it-menu-template.csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  const previewUser = { ...user, profile: { ...user.profile, accountType: "business", menuSheetUrl: url.trim(), menuCurrency: currency } };
+
+  return (
+    <div className="stack" style={{ "--gap": "22px" }}>
+      <div className="row-b">
+        <div>
+          <h1 className="h-page">Menu</h1>
+          <p className="mut sm" style={{ marginTop: 6 }}>Your menu lives in a Google Sheet. Change a price there and your page updates within about 5 minutes.</p>
+        </div>
+        <Button onClick={save} loading={busy} disabled={!dirty}>{dirty ? "Save" : "Saved"}</Button>
+      </div>
+
+      <div className="dash-split">
+        <div className="stack" style={{ "--gap": "18px" }}>
+          {!isBiz && (
+            <div className="plan-ban" role="status">
+              <span className="grow sm">Saving a menu switches this page to a restaurant / café page.</span>
+            </div>
+          )}
+
+          <div className="card pad-l">
+            <h3 style={{ fontSize: 17 }}>1. Make your menu sheet</h3>
+            <ol className="mut sm mn-steps">
+              <li>Download the template and open it in Google Sheets (<b>File → Import → Upload</b>).</li>
+              <li>Fill one row per item. Leave Arabic columns empty if you don't need them.</li>
+              <li>Type <b>no</b> in <b>Available</b> to hide a sold-out item.</li>
+              <li>For photos, paste a public image link (https://…) in <b>Photo</b>.</li>
+            </ol>
+            <Button variant="g" size="sm" style={{ marginTop: 14 }} onClick={downloadTemplate}>Download template</Button>
+          </div>
+
+          <div className="card pad-l">
+            <h3 style={{ fontSize: 17 }}>2. Publish it and paste the link</h3>
+            <p className="mut sm" style={{ marginTop: 6 }}>
+              In Google Sheets: <b>File → Share → Publish to web</b> → pick the menu tab → <b>Comma-separated values (.csv)</b> → <b>Publish</b>. Copy the link it gives you.
+            </p>
+            <div className="stack" style={{ "--gap": "14px", marginTop: 16 }}>
+              <Field label="Google Sheet link" id="mn-url" error={url && !loading ? error : null}>
+                <TextInput id="mn-url" value={url} placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv" spellCheck="false" onChange={(e) => setUrl(e.target.value)} />
+              </Field>
+              <Field label="Currency" id="mn-cur" hint="Shown after every price, e.g. EGP, SAR, $.">
+                <TextInput id="mn-cur" value={currency} maxLength={8} style={{ maxWidth: 140 }} onChange={(e) => setCurrency(e.target.value)} />
+              </Field>
+              {url && (
+                <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                  {loading ? <span className="mut sm">Reading your sheet…</span>
+                    : menu ? <span className="pill pill-ok">{I.check} {menu.count} item{menu.count === 1 ? "" : "s"} in {menu.categories.length} categor{menu.categories.length === 1 ? "y" : "ies"}</span>
+                    : null}
+                  <Button variant="q" size="sm" onClick={() => setReload((n) => n + 1)}>Refresh now</Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="card pad-l">
+            <h3 style={{ fontSize: 17 }}>3. Make it yours</h3>
+            <p className="mut sm" style={{ marginTop: 6 }}>Background, colors, fonts and button shapes for the menu come from <b>Appearance</b>. Add your Google review link, Instagram and WhatsApp in <b>Links</b>.</p>
+          </div>
+        </div>
+        <PreviewPane user={previewUser} title="Menu preview" />
+      </div>
     </div>
   );
 }
@@ -4498,6 +5000,7 @@ export default function App() {
       </div>
     );
   } else if (path === "/") view = <Landing go={go} user={user} />;
+  else if (path === "/business") view = <BusinessLanding go={go} user={user} />;
   else if (path === "/login") view = <Login go={go} />;
   else if (path === "/signup") view = <Signup go={go} />;
   else if (path === "/forgot-password") view = <ForgotPassword go={go} />;
@@ -4510,6 +5013,7 @@ export default function App() {
       sec === "appearance" ? <Appearance /> :
       sec === "analytics" ? <Analytics /> :
       sec === "settings" ? <Settings go={go} /> :
+      sec === "menu" ? <MenuPage /> :
       <Overview go={go} />;
     view = <DashboardShell go={go} route={route}>{inner}</DashboardShell>;
   } else if (isDash || isOnboard) {
@@ -4520,7 +5024,7 @@ export default function App() {
       ? <PublicProfile key={candidate} username={candidate} go={go} />
       : <NotFound go={go} />;
   }
-  const isPublicProfile = !booting && !isDash && !isOnboard && !isAuthPage && path !== "/" &&
+  const isPublicProfile = !booting && !isDash && !isOnboard && !isAuthPage && path !== "/" && path !== "/business" &&
     /^[a-z0-9._]{1,20}$/.test(path.replace(/^\//, "").toLowerCase());
 
   return (
