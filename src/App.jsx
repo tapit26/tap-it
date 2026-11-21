@@ -2211,7 +2211,7 @@ const BIZ_FEATURES = [
   { icon: I.chart, t: "See what people open", d: "Count how many guests scan each day and which links they tap." },
 ];
 const BIZ_STEPS = [
-  { n: "01", t: "Order your stickers", d: "Tell us how many tables you have. Every sticker comes with a token that makes your page free." },
+  { n: "01", t: "Order your stickers", d: "Tell us how many tables you have. Your order comes with one token that makes your page free, however many stickers you get." },
   { n: "02", t: "Connect your menu sheet", d: "Copy our Google Sheets template, fill in your items and prices, and paste the link in your dashboard." },
   { n: "03", t: "Stick, tap, done", d: "Put a sticker on each table. Guests tap with their phone and your menu opens instantly." },
 ];
@@ -2240,7 +2240,7 @@ function BusinessLanding({ go, user }) {
               </div>
               <p className="hero-note">
                 <span style={{ color: "var(--ok)", display: "flex" }}>{I.check}</span>
-                Free with Tap-it table stickers
+                Free with any Tap-it sticker order: one code covers all your tables
               </p>
             </div>
             <div className="phone-stage">
