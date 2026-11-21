@@ -2392,15 +2392,15 @@ const DEMO_MENU = {
     { name: "Coffee", nameAr: "قهوة", photo: "/demo/coffee-banner.jpg", pageBg: "/demo/coffee-page.jpg", items: [
       { name: "Espresso", nameAr: "إسبريسو", price: "55", desc: "Double shot, house blend", descAr: "شوت مزدوج", photo: "/demo/item-espresso.jpg" },
       { name: "Flat white", nameAr: "فلات وايت", price: "75", desc: "Double ristretto, silky milk", descAr: "ريستريتو مزدوج وحليب", photo: "/demo/item-flatwhite.jpg" },
-      { name: "Spanish latte", nameAr: "سبانش لاتيه", price: "85", desc: "Condensed milk, espresso", descAr: "حليب مكثف وإسبريسو", photo: "/demo/item-latte.jpg" },
+      { name: "Spanish latte", nameAr: "سبانش لاتيه", price: "85", desc: "Iced, condensed milk, espresso", descAr: "مثلج، حليب مكثف وإسبريسو", photo: "/demo/item-spanishlatte.jpg" },
     ] },
     { name: "Breakfast", nameAr: "فطار", photo: "/demo/breakfast-banner.jpg", pageBg: "/demo/breakfast-page.jpg", items: [
       { name: "Shakshuka", nameAr: "شكشوكة", price: "120", desc: "Baked eggs, tomato, feta", descAr: "بيض وطماطم وجبنة فيتا", photo: "/demo/item-shakshuka.jpg" },
-      { name: "Avocado toast", nameAr: "توست أفوكادو", price: "135", desc: "Sourdough, chili flakes", descAr: "خبز ساوردو وشطة" },
+      { name: "Avocado toast", nameAr: "توست أفوكادو", price: "135", desc: "Sourdough, fried egg, seeds", descAr: "خبز ساوردو وبيض وبذور", photo: "/demo/item-avocado.jpg" },
     ] },
     { name: "Desserts", nameAr: "حلويات", photo: "/demo/desserts-banner.jpg", pageBg: "/demo/desserts-page.jpg", items: [
       { name: "Matcha cheesecake", nameAr: "تشيز كيك ماتشا", price: "110", desc: "Whipped cream, matcha dust", descAr: "كريمة وماتشا", photo: "/demo/item-matcha.jpg" },
-      { name: "Molten cake", nameAr: "مولتن كيك", price: "95", desc: "With vanilla ice cream", descAr: "مع آيس كريم" },
+      { name: "Molten cake", nameAr: "مولتن كيك", price: "95", desc: "With vanilla ice cream", descAr: "مع آيس كريم", photo: "/demo/item-molten.jpg" },
     ] },
   ],
 };
