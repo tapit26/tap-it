@@ -270,6 +270,14 @@ p.mn-desc { font-size:calc(12.5px * var(--fs-scale, 1)); opacity:.72; margin-top
 .mv-ban.on .mv-ban-txt h3 { transform:none; opacity:1; }
 .mv-ban-txt span { font-size:12px; font-weight:700; opacity:.85; white-space:nowrap; }
 .mv-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; align-items:start; }
+.mv-col { display:flex; flex-direction:column; gap:10px; min-width:0; }
+.mv { position:relative; isolation:isolate; min-height:100%; }
+.mv-bg { position:sticky; top:0; height:100vh; margin-bottom:-100vh; z-index:-1; overflow:hidden; pointer-events:none; }
+.mv-bg-img { position:absolute; inset:0; background-size:cover; background-position:center; animation: bgIn .7s ease; }
+@keyframes bgIn { from { opacity:0; transform:scale(1.06); } }
+.mv-has-bg .mv-bar, .mv-has-bg .mv-bar .mv-ic, .mv-has-bg .mv-bar .mn-lang { color:#fff !important; }
+.mv-has-bg .mv-bar .mv-ic, .mv-has-bg .mv-bar .mn-lang { border-color:rgba(255,255,255,.45) !important; }
+.mv-has-bg .mn-tab[aria-selected="false"] { color:#fff !important; border-color:rgba(255,255,255,.45) !important; background:rgba(0,0,0,.18) !important; }
 .mv-gi { display:flex; flex-direction:column; animation: lnkIn .42s cubic-bezier(.2,.8,.3,1) backwards; }
 .mv-gi-ph { width:100%; aspect-ratio:1; object-fit:cover; display:block; }
 .mv-gi-body { padding:10px 11px 11px; display:flex; flex-direction:column; min-width:0; }
@@ -1563,7 +1571,8 @@ const MENU_COLS = {
   desc: ["description", "desc", "details"],
   descAr: ["descriptionar", "descriptionarabic", "descar"],
   photo: ["photo", "image", "photolink", "imagelink", "صورة"],
-  catPhoto: ["categoryphoto", "categoryimage", "sectionphoto", "categorybackground"],
+  catPhoto: ["categoryphoto", "categoryimage", "sectionphoto", "categorybanner"],
+  pageBg: ["pagebackground", "categorybackground", "background"],
   available: ["available", "instock", "show", "متاح"],
 };
 
@@ -1586,7 +1595,9 @@ function menuFromCsv(text) {
     const avail = get(r, "available").toLowerCase();
     if (["no", "0", "false", "x", "لا", "hide"].includes(avail)) return;
     const cName = get(r, "category") || "Menu";
-    if (!byName[cName]) { byName[cName] = { name: cName, nameAr: get(r, "categoryAr"), photo: "", items: [] }; cats.push(byName[cName]); }
+    if (!byName[cName]) { byName[cName] = { name: cName, nameAr: get(r, "categoryAr"), photo: "", pageBg: "", items: [] }; cats.push(byName[cName]); }
+    const pb = get(r, "pageBg");
+    if (!byName[cName].pageBg && /^https:\/\//i.test(pb)) byName[cName].pageBg = pb;
     const cp = get(r, "catPhoto");
     if (!byName[cName].photo && /^https:\/\//i.test(cp)) byName[cName].photo = cp;
     const photo = get(r, "photo");
@@ -1634,6 +1645,25 @@ function categoryPhoto(profile, c) {
 }
 function itemPhoto(profile, it) {
   return it.photo || profile.menuPhotos?.[photoKey(it.name)] || "";
+}
+
+/* Full-page background per category: sheet "Page Background" column, then upload. */
+const pageBgKey = (name) => "page:" + photoKey(name);
+function categoryPageBg(profile, c) {
+  return c.pageBg || profile.menuPhotos?.[pageBgKey(c.name)] || "";
+}
+
+/* Splits items into 2 columns, always adding to the shorter one, so a tall
+   photo card never leaves an empty gap beside it. Keeps reading order. */
+function masonry(items, profile) {
+  const cols = [[], []];
+  const h = [0, 0];
+  items.forEach((it, i) => {
+    const k = h[0] <= h[1] ? 0 : 1;
+    cols[k].push({ it, i });
+    h[k] += (itemPhoto(profile, it) ? 3.2 : 1) + (it.desc ? 0.5 : 0);
+  });
+  return cols;
 }
 
 /** The big "View menu" button on the profile. */
@@ -1690,8 +1720,16 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
     else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const curCat = menu?.categories[Math.min(active, (menu?.categories.length || 1) - 1)];
+  const pageBg = curCat ? categoryPageBg(profile, curCat) : "";
+
   return (
-    <div className="mv" dir={ar ? "rtl" : "ltr"}>
+    <div className={"mv" + (pageBg ? " mv-has-bg" : "")} dir={ar ? "rtl" : "ltr"}>
+      {pageBg && (
+        <div className="mv-bg" aria-hidden="true">
+          <div key={pageBg} className="mv-bg-img" style={{ backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.62)), url(${pageBg})` }} />
+        </div>
+      )}
       <div className="mv-bar">
         <div className="mv-top">
           <button type="button" className="mv-ic" aria-label={ar ? "رجوع" : "Back"} onClick={onClose} style={{ color: theme.text, borderColor: theme.border }}>
@@ -1740,34 +1778,47 @@ function MenuView({ profile, theme, appearance, scrollerRef, onClose }) {
                 <span>{c.items.length} {ar ? "صنف" : c.items.length === 1 ? "item" : "items"}</span>
               </div>
             </div>
-            <div className={grid ? "mv-grid" : "mn-list"}>
-              {c.items.map((it, i) => {
-                const ph = itemPhoto(profile, it);
-                const name = (ar && it.nameAr) || it.name;
-                const desc = (ar && it.descAr) || it.desc;
-                return grid ? (
-                  <div key={it.name + i} className="mv-gi" style={{ ...card, padding: 0, overflow: "hidden", animationDelay: `${(i % 6) * 40}ms` }}>
-                    {ph ? <img src={ph} alt="" className="mv-gi-ph" loading="lazy" /> : null}
-                    <div className="mv-gi-body">
-                      <span className="mn-name">{name}</span>
-                      {desc && <p className="mn-desc mv-clamp">{desc}</p>}
-                      {it.price && <span className="mn-price" style={{ marginTop: "auto", paddingTop: 6 }}>{it.price} {cur}</span>}
-                    </div>
+            {grid ? (
+              <div className="mv-grid">
+                {masonry(c.items, profile).map((col, k) => (
+                  <div className="mv-col" key={k}>
+                    {col.map(({ it, i }) => {
+                      const ph = itemPhoto(profile, it);
+                      const desc = (ar && it.descAr) || it.desc;
+                      return (
+                        <div key={it.name + i} className="mv-gi" style={{ ...card, padding: 0, overflow: "hidden", animationDelay: `${(i % 6) * 40}ms` }}>
+                          {ph ? <img src={ph} alt="" className="mv-gi-ph" loading="lazy" /> : null}
+                          <div className="mv-gi-body">
+                            <span className="mn-name">{(ar && it.nameAr) || it.name}</span>
+                            {desc && <p className="mn-desc mv-clamp">{desc}</p>}
+                            {it.price && <span className="mn-price" style={{ paddingTop: 6 }}>{it.price} {cur}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ) : (
-                  <div key={it.name + i} className="mn-item" style={{ ...card, animationDelay: `${(i % 8) * 35}ms` }}>
-                    {ph && <img src={ph} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />}
-                    <div className="grow" style={{ minWidth: 0 }}>
-                      <div className="mn-row">
-                        <span className="mn-name">{name}</span>
-                        {it.price && <span className="mn-price">{it.price} {cur}</span>}
+                ))}
+              </div>
+            ) : (
+              <div className="mn-list">
+                {c.items.map((it, i) => {
+                  const ph = itemPhoto(profile, it);
+                  const desc = (ar && it.descAr) || it.desc;
+                  return (
+                    <div key={it.name + i} className="mn-item" style={{ ...card, animationDelay: `${(i % 8) * 35}ms` }}>
+                      {ph && <img src={ph} alt="" className="mn-ph" style={{ borderRadius: Math.min(r, 12) }} loading="lazy" />}
+                      <div className="grow" style={{ minWidth: 0 }}>
+                        <div className="mn-row">
+                          <span className="mn-name">{(ar && it.nameAr) || it.name}</span>
+                          {it.price && <span className="mn-price">{it.price} {cur}</span>}
+                        </div>
+                        {desc && <p className="mn-desc">{desc}</p>}
                       </div>
-                      {desc && <p className="mn-desc">{desc}</p>}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         );
       })}
@@ -3953,7 +4004,7 @@ function MenuPage() {
     if (!file) return;
     if (!/^image\//.test(file.type)) { toast("Pick an image file.", "bad"); return; }
     if (file.size > 10 * 1024 * 1024) { toast("Images need to be under 10MB.", "bad"); return; }
-    const cropped = await requestCrop(file, { aspect, shape: "rect", maxOutput: aspect > 1 ? 1000 : 600 });
+    const cropped = await requestCrop(file, { aspect, shape: "rect", maxOutput: aspect > 1 ? 1000 : aspect < 1 ? 900 : 600 });
     if (!cropped) return;
     setPhotoBusy(key);
     try {
@@ -4064,7 +4115,7 @@ function MenuPage() {
 
           <div className="card pad-l">
             <h3 style={{ fontSize: 17 }}>3. Add photos (optional)</h3>
-            <p className="mut sm" style={{ marginTop: 6 }}>Give each category a background (e.g. a coffee photo for Hot drinks) and add item photos. Photos stay matched to the names, so keep names the same in your sheet.</p>
+            <p className="mut sm" style={{ marginTop: 6 }}>Give each category a banner and a full-page background (e.g. coffee photos for Hot drinks), and add item photos. Photos stay matched to the names, so keep names the same in your sheet.</p>
             {!menu || !menu.count ? (
               <p className="mut sm" style={{ marginTop: 14 }}>Connect your sheet first and your items show up here.</p>
             ) : (
@@ -4088,6 +4139,27 @@ function MenuPage() {
                                   onChange={(e) => { uploadPhoto(c.name, e.target.files?.[0], ck, 2.6); e.target.value = ""; }} />
                               </label>
                               {photos[ck] && <button className="icobtn danger" style={cbg ? { color: "#fff" } : undefined} aria-label={`Remove ${c.name} background`} onClick={() => removePhoto(c.name, ck)}>{I.trash}</button>}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const pk = pageBgKey(c.name);
+                      const pbg = c.pageBg || photos[pk];
+                      return (
+                        <div className="row" style={{ gap: 10, marginBottom: 8, padding: "0 2px" }}>
+                          <div className="mp-th" style={{ width: 30, height: 44, borderRadius: 7 }}>{pbg ? <img src={pbg} alt="" /> : null}</div>
+                          <span className="grow sm mut">Page background {c.pageBg ? "(from sheet)" : ""}</span>
+                          {!c.pageBg && (
+                            <>
+                              <label className="btn btn-g btn-sm" style={{ cursor: "pointer" }}>
+                                {photoBusy === pk ? <span className="spin" aria-hidden="true" /> : null}
+                                {photos[pk] ? "Change" : "Add"}
+                                <input type="file" accept="image/*" style={{ display: "none" }} disabled={!!photoBusy}
+                                  onChange={(e) => { uploadPhoto(c.name, e.target.files?.[0], pk, 9 / 16); e.target.value = ""; }} />
+                              </label>
+                              {photos[pk] && <button className="icobtn danger" aria-label={`Remove ${c.name} page background`} onClick={() => removePhoto(c.name, pk)}>{I.trash}</button>}
                             </>
                           )}
                         </div>
